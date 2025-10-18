@@ -22,6 +22,14 @@ import { createPersistStorage, STORAGE_KEY } from "@/lib/storage";
 
 const now = () => new Date().toISOString();
 
+const moveItem = <T,>(input: T[], fromIndex: number, toIndex: number): T[] => {
+  if (fromIndex === toIndex) return [...input];
+  const next = [...input];
+  const [item] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, item);
+  return next;
+};
+
 const sanitizeLegacyStatusCells = (input: Partial<AppData>): Partial<AppData> => {
   if (!input.projects) return input;
   const projects = input.projects.map((project) => {
@@ -83,12 +91,20 @@ type AppActions = {
   setIncludeOpenEnded: (value: boolean) => void;
   setLastBackupAt: (isoString: string | null) => void;
   addProject: (project: Project) => void;
+  reorderProjects: (projectId: string, targetIndex: number) => void;
   updateProject: (projectId: string, payload: Partial<Project>) => void;
   removeProject: (projectId: string) => void;
   addSection: (projectId: string, section: Section) => void;
+  reorderSections: (projectId: string, sectionId: string, targetIndex: number) => void;
   updateSection: (projectId: string, sectionId: string, payload: Partial<Section>) => void;
   removeSection: (projectId: string, sectionId: string) => void;
   addTracker: (projectId: string, sectionId: string, tracker: Tracker) => void;
+  reorderTrackers: (
+    projectId: string,
+    sectionId: string,
+    trackerId: string,
+    targetIndex: number,
+  ) => void;
   updateTracker: (
     projectId: string,
     sectionId: string,
@@ -238,6 +254,23 @@ export const useAppStore = create<AppStore>()(
               projects: [...state.projects, next],
             };
           }),
+        reorderProjects: (projectId, targetIndex) =>
+          set((state) => {
+            const currentIndex = state.projects.findIndex((project) => project.id === projectId);
+            if (currentIndex === -1 || targetIndex < 0 || targetIndex >= state.projects.length) {
+              return {};
+            }
+            const timestamp = now();
+            const nextProjects = moveItem(state.projects, currentIndex, targetIndex);
+            const movedProject = nextProjects[targetIndex];
+            nextProjects[targetIndex] = {
+              ...movedProject,
+              updatedAt: timestamp,
+            };
+            return {
+              projects: nextProjects,
+            };
+          }),
         updateProject: (projectId, payload) =>
           set((state) => ({
             projects: state.projects.map((project) => {
@@ -267,6 +300,33 @@ export const useAppStore = create<AppStore>()(
               return {
                 ...project,
                 sections: [...project.sections, nextSection],
+                updatedAt: timestamp,
+              };
+            }),
+          })),
+        reorderSections: (projectId, sectionId, targetIndex) =>
+          set((state) => ({
+            projects: state.projects.map((project) => {
+              if (project.id !== projectId) return project;
+              const currentIndex = project.sections.findIndex(
+                (section) => section.id === sectionId,
+              );
+              if (
+                currentIndex === -1 ||
+                targetIndex < 0 ||
+                targetIndex >= project.sections.length
+              ) {
+                return project;
+              }
+              const timestamp = now();
+              const nextSections = moveItem(project.sections, currentIndex, targetIndex);
+              nextSections[targetIndex] = {
+                ...nextSections[targetIndex],
+                updatedAt: timestamp,
+              };
+              return {
+                ...project,
+                sections: nextSections,
                 updatedAt: timestamp,
               };
             }),
@@ -343,6 +403,40 @@ export const useAppStore = create<AppStore>()(
                       }) as Tracker;
                     }),
                     updatedAt: now(),
+                  };
+                }),
+                updatedAt: now(),
+              };
+            }),
+          })),
+        reorderTrackers: (projectId, sectionId, trackerId, targetIndex) =>
+          set((state) => ({
+            projects: state.projects.map((project) => {
+              if (project.id !== projectId) return project;
+              return {
+                ...project,
+                sections: project.sections.map((section) => {
+                  if (section.id !== sectionId) return section;
+                  const currentIndex = section.trackers.findIndex(
+                    (tracker) => tracker.id === trackerId,
+                  );
+                  if (
+                    currentIndex === -1 ||
+                    targetIndex < 0 ||
+                    targetIndex >= section.trackers.length
+                  ) {
+                    return section;
+                  }
+                  const timestamp = now();
+                  const nextTrackers = moveItem(section.trackers, currentIndex, targetIndex);
+                  nextTrackers[targetIndex] = {
+                    ...nextTrackers[targetIndex],
+                    updatedAt: timestamp,
+                  } as Tracker;
+                  return {
+                    ...section,
+                    trackers: nextTrackers,
+                    updatedAt: timestamp,
                   };
                 }),
                 updatedAt: now(),

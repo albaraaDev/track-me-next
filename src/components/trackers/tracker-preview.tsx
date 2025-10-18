@@ -8,6 +8,7 @@ import {
   Check,
   Edit,
   Eraser,
+  GripVertical,
   Minus,
   NotebookPen,
   Table2,
@@ -46,6 +47,22 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  DndContext,
+  DragEndEvent,
+  DragStartEvent,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 type TrackerPreviewProps = {
   trackers: Tracker[];
@@ -69,10 +86,37 @@ export function TrackerPreview({
   sectionId,
 }: TrackerPreviewProps) {
   const { toast } = useToast();
-  const { removeTracker } = useAppActions();
+  const { removeTracker, reorderTrackers } = useAppActions();
   const [editTrackerId, setEditTrackerId] = React.useState<string | null>(null);
   const [deleteTrackerId, setDeleteTrackerId] = React.useState<string | null>(
     null
+  );
+  const [activeId, setActiveId] = React.useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 150, tolerance: 8 },
+    })
+  );
+
+  const handleDragStart = React.useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  }, []);
+
+  const handleDragEnd = React.useCallback(
+    (event: DragEndEvent) => {
+      setActiveId(null);
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const targetIndex = trackers.findIndex((tracker) => tracker.id === over.id);
+      if (targetIndex < 0) return;
+      reorderTrackers(projectId, sectionId, active.id as string, targetIndex);
+    },
+    [projectId, reorderTrackers, sectionId, trackers]
   );
 
   const trackerMap = React.useMemo(() => {
@@ -114,73 +158,31 @@ export function TrackerPreview({
 
   return (
     <>
-      <Accordion type="single" collapsible className="space-y-3" dir="rtl">
-        {trackers.map((tracker) => (
-          <AccordionItem
-            key={tracker.id}
-            value={tracker.id}
-            className="rounded-2xl border border-border/50 bg-white/5 px-4 backdrop-blur"
-          >
-            <AccordionTrigger className="flex items-center justify-between gap-3 py-3 text-right text-sm font-medium text-foreground">
-              <div className="flex justify-between items-center flex-1">
-                <div className="flex flex-col items-start gap-1">
-                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <span className="text-xl">
-                      {tracker.icon ||
-                        (tracker.type === 'status' ? '📊' : '📝')}
-                    </span>
-                    {tracker.title}
-                  </span>
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <span>{formatDate(tracker.startDate)}</span>⇠
-                    <span>
-                      {tracker.endDate
-                        ? formatDate(tracker.endDate)
-                        : 'متابعة مفتوحة'}
-                    </span>
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center justify-end">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="rounded-full text-green-500 hover:bg-green-500/10 px-2"
-                    onClick={() => setEditTrackerId(tracker.id)}
-                  >
-                    <Edit />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="rounded-full text-destructive hover:bg-destructive/10 px-2"
-                    onClick={() => setDeleteTrackerId(tracker.id)}
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="space-y-4">
-              <TrackerMeta tracker={tracker} />
-              {tracker.type === 'status' ? (
-                <StatusTrackerPreview
-                  tracker={tracker as StatusTracker}
-                  projectId={projectId}
-                  sectionId={sectionId}
-                />
-              ) : (
-                <NotesTrackerPreview
-                  tracker={tracker as NotesTracker}
-                  projectId={projectId}
-                  sectionId={sectionId}
-                />
-              )}
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={trackers.map((tracker) => tracker.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <Accordion type="single" collapsible className="space-y-3" dir="rtl">
+            {trackers.map((tracker) => (
+              <SortableTrackerItem
+                key={tracker.id}
+                tracker={tracker}
+                projectId={projectId}
+                sectionId={sectionId}
+                onEdit={() => setEditTrackerId(tracker.id)}
+                onDelete={() => setDeleteTrackerId(tracker.id)}
+                isActive={activeId === tracker.id}
+              />
+            ))}
+          </Accordion>
+        </SortableContext>
+      </DndContext>
 
       {editTrackerId ? (
         <TrackerEditSheet
@@ -353,6 +355,122 @@ function NotesTrackerPreview({
         sectionId={sectionId}
       />
     </div>
+  );
+}
+
+type SortableTrackerItemProps = {
+  tracker: Tracker;
+  projectId: string;
+  sectionId: string;
+  onEdit: () => void;
+  onDelete: () => void;
+  isActive: boolean;
+};
+
+function SortableTrackerItem({
+  tracker,
+  projectId,
+  sectionId,
+  onEdit,
+  onDelete,
+  isActive,
+}: SortableTrackerItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: tracker.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <AccordionItem
+      ref={setNodeRef}
+      value={tracker.id}
+      style={style}
+      className={cn(
+        'rounded-2xl border border-border/50 bg-white/5 px-4 backdrop-blur transition',
+        isDragging ? 'opacity-80 shadow-glow-soft' : undefined
+      )}
+    >
+      <AccordionTrigger className="flex items-center justify-between gap-3 py-3 text-right text-sm font-medium text-foreground">
+        <div className="flex justify-between items-center flex-1 gap-3">
+          <div className="flex gap-2 items-center">
+          <button
+              type="button"
+              ref={setActivatorNodeRef}
+              {...attributes}
+              {...listeners}
+              aria-label="إعادة ترتيب الجدول"
+              className={cn(
+                'glass-panel-muted flex size-9 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                isActive || isDragging ? 'text-foreground' : undefined
+              )}
+            >
+              <GripVertical className="size-4" />
+            </button>
+          <div className="flex flex-col items-start gap-1">
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+              <span className="text-xl">
+                {tracker.icon || (tracker.type === 'status' ? '📊' : '📝')}
+              </span>
+              {tracker.title}
+            </span>
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span>{formatDate(tracker.startDate)}</span>⇠
+              <span>
+                {tracker.endDate ? formatDate(tracker.endDate) : 'متابعة مفتوحة'}
+              </span>
+            </span>
+          </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="rounded-full text-green-500 hover:bg-green-500/10 px-2"
+              onClick={onEdit}
+            >
+              <Edit />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="rounded-full text-destructive hover:bg-destructive/10 px-2"
+              onClick={onDelete}
+            >
+              <Trash2 />
+            </Button>
+          </div>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="space-y-4">
+        <TrackerMeta tracker={tracker} />
+        {tracker.type === 'status' ? (
+          <StatusTrackerPreview
+            tracker={tracker as StatusTracker}
+            projectId={projectId}
+            sectionId={sectionId}
+          />
+        ) : (
+          <NotesTrackerPreview
+            tracker={tracker as NotesTracker}
+            projectId={projectId}
+            sectionId={sectionId}
+          />
+        )}
+      </AccordionContent>
+    </AccordionItem>
   );
 }
 

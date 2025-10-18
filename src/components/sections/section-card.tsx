@@ -25,6 +25,7 @@ type SectionCardProps = {
   section: Section;
   onEdit?: (sectionId: string) => void;
   onDelete?: (sectionId: string) => void;
+  dragHandle?: React.ReactNode;
 };
 
 const formatDate = (date: string | null | undefined) =>
@@ -35,6 +36,7 @@ export function SectionCard({
   section,
   onEdit,
   onDelete,
+  dragHandle,
 }: SectionCardProps) {
   const trackersCount = section.trackers.length;
   const [isEditOpen, setIsEditOpen] = React.useState(false);
@@ -67,7 +69,9 @@ export function SectionCard({
       <article className="glass-panel relative overflow-hidden rounded-3xl p-5 shadow-glass transition hover:shadow-glow-soft">
         <div className="absolute inset-0 z-0 bg-gradient-to-br from-secondary/10 via-transparent to-primary/5" />
         <div className="relative z-10 flex flex-col gap-4">
-          <header className="flex items-start justify-between gap-3">
+          <header className="flex items-center justify-between gap-3">
+          {dragHandle ? <span className="inline-flex">{dragHandle}</span> : null}
+
             <Link
               href={`/projects/${projectId}/sections/${section.id}`}
               className="flex items-center gap-3 flex-1"

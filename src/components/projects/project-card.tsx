@@ -24,12 +24,18 @@ type ProjectCardProps = {
   project: Project;
   onEdit?: (projectId: string) => void;
   onDelete?: (projectId: string) => void;
+  dragHandle?: React.ReactNode;
 };
 
 const formatDate = (date: string | null | undefined) =>
   formatAppDate(date, 'd MMMM yyyy', { locale: ar });
 
-export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
+export function ProjectCard({
+  project,
+  onEdit,
+  onDelete,
+  dragHandle,
+}: ProjectCardProps) {
   const sectionsCount = project.sections.length;
   const trackersCount = project.sections.reduce(
     (sum, section) => sum + section.trackers.length,
@@ -65,8 +71,11 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
       <article className="glass-panel relative overflow-hidden rounded-3xl p-5 shadow-glass transition hover:shadow-glow-soft">
         <div className="absolute inset-0 z-0 bg-gradient-to-br from-primary/5 via-primary/0 to-accent/10" />
         <div className="relative z-10 flex flex-col gap-4">
-          <header className="flex items-start justify-between gap-3">
-            <Link href={`/projects/${project.id}`} className='flex-1'>
+          <header className="flex items-center justify-between gap-3">
+            {dragHandle ? (
+              <span className="inline-flex shrink-0">{dragHandle}</span>
+            ) : null}
+            <Link href={`/projects/${project.id}`} className="flex-1">
               <div className="flex items-center gap-3">
                 <div className="flex size-12 items-center justify-center rounded-2xl border border-border/60 bg-white/25 text-2xl backdrop-blur">
                   <span aria-hidden>{project.icon || '📁'}</span>
@@ -83,31 +92,33 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
                 </div>
               </div>
             </Link>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="glass-panel-muted size-9 rounded-full border border-border/50 text-muted-foreground"
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="glass-panel-muted size-9 rounded-full border border-border/50 text-muted-foreground"
+                  >
+                    <EllipsisVertical className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="glass-panel rounded-2xl border border-border/50"
                 >
-                  <EllipsisVertical className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="glass-panel rounded-2xl border border-border/50"
-              >
-                <DropdownMenuItem onSelect={handleEdit}>
-                  تعديل المشروع
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onSelect={handleDelete}
-                >
-                  حذف المشروع
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuItem onSelect={handleEdit}>
+                    تعديل المشروع
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onSelect={handleDelete}
+                  >
+                    حذف المشروع
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </header>
 
           <Link href={`/projects/${project.id}`}>
@@ -139,15 +150,15 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
                       sectionsCount === 0 ? 'italic text-red-500' : ''
                     }`}
                   >
-                  {sectionsCount > 0
-                    ? `${
-                        sectionsCount === 1
-                          ? 'قسم واحد'
-                          : sectionsCount === 2
-                          ? 'قسمان'
-                          : `${sectionsCount} أقسام`
-                      } `
-                    : 'لم يتم إضافة أقسام بعد'}
+                    {sectionsCount > 0
+                      ? `${
+                          sectionsCount === 1
+                            ? 'قسم واحد'
+                            : sectionsCount === 2
+                            ? 'قسمان'
+                            : `${sectionsCount} أقسام`
+                        } `
+                      : 'لم يتم إضافة أقسام بعد'}
                   </dd>
                 </div>
               </div>
