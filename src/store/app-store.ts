@@ -9,6 +9,7 @@ import {
   Project,
   Section,
   Tracker,
+  trackerStatusSchema,
   appDataSchema,
   createInitialAppData,
   filterStateSchema,
@@ -52,10 +53,10 @@ const sanitizeLegacyStatusCells = (input: Partial<AppData>): Partial<AppData> =>
                 nextCells[itemId] = nextDayMap;
               }
             });
-            return {
+            return trackerStatusSchema.parse({
               ...tracker,
               cells: nextCells,
-            };
+            });
           }),
         };
       }),
@@ -78,6 +79,8 @@ type AppActions = {
   toggleFilterProject: (projectId: string) => void;
   toggleFilterSection: (projectId: string, sectionId: string) => void;
   setFilterRange: (from: string | null, to?: string | null) => void;
+  setTimeframe: (timeframe: FilterState["timeframe"]) => void;
+  setIncludeOpenEnded: (value: boolean) => void;
   setLastBackupAt: (isoString: string | null) => void;
   addProject: (project: Project) => void;
   updateProject: (projectId: string, payload: Partial<Project>) => void;
@@ -143,6 +146,21 @@ export const useAppStore = create<AppStore>()(
               ...filterStateSchema
                 .partial()
                 .parse(payload),
+            },
+          })),
+        setTimeframe: (timeframe) =>
+          set((state) => ({
+            filters: {
+              ...state.filters,
+              timeframe,
+              customRange: timeframe !== "custom" ? undefined : state.filters.customRange,
+            },
+          })),
+        setIncludeOpenEnded: (value) =>
+          set((state) => ({
+            filters: {
+              ...state.filters,
+              includeOpenEnded: value,
             },
           })),
         toggleFilterProject: (projectId) =>

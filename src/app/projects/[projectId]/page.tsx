@@ -15,6 +15,7 @@ import { formatAppDate } from '@/lib/date';
 import { ProjectOverview } from '@/components/projects/project-overview';
 import { ProjectStats } from '@/components/projects/project-stats';
 import { computeProjectMetrics } from '@/lib/stats';
+import { ProjectFilters } from '@/components/projects/project-filters';
 
 type ProjectPageProps = {
   params: { projectId: string };
@@ -144,6 +145,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         </TabsList>
 
         <TabsContent value="overview" className="mt-0 space-y-4">
+          <ProjectFilters projectId={project?.id ?? params.projectId} />
           <ProjectOverview project={project} metrics={metrics} />
         </TabsContent>
 
@@ -155,7 +157,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
           />
         </TabsContent>
 
-        <TabsContent value="stats" className="mt-0">
+        <TabsContent value="stats" className="mt-0 space-y-4">
+          <ProjectFilters projectId={project?.id ?? params.projectId} />
           <ProjectStats project={project} metrics={metrics} />
         </TabsContent>
       </Tabs>
