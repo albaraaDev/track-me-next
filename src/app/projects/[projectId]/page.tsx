@@ -75,7 +75,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                               ? 'جدولا متابعة'
                               : trackerCount + ' جداول متابعة'
                           } `
-                        : 'قم بإضافة الأقسام والجداول لبدء متابعة الإنجازات اليومية.'}
+                        : 'لا توجد جداول بعد'}
                     </div>
                   </div>
                   <p className="text-sm shrink text-muted-foreground">
