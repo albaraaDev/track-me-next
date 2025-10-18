@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cairo } from "next/font/google";
 import { AppProviders } from "@/components/providers/app-providers";
 import { Toaster } from "@/components/ui/toaster";
@@ -15,6 +15,17 @@ export const metadata: Metadata = {
   title: "تراك مي",
   description:
     "منصة عربية أنيقة لإدارة المشاريع الشخصية وتعقب العادات بطريقة عصرية وسهلة الاستخدام.",
+  manifest: "/manifest.json",
+  applicationName: "Track Me",
+  appleWebApp: {
+    capable: true,
+    title: "Track Me",
+    statusBarStyle: "black-translucent",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1e293b",
 };
 
 export default function RootLayout({
