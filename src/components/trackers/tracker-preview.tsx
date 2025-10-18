@@ -539,14 +539,6 @@ function StatusGrid({
     tracker.id,
   ]);
 
-  if (!tracker.items.length) {
-    return (
-      <div className="rounded-2xl border border-dashed border-border/50 p-4 text-center text-xs text-muted-foreground">
-        أضف عناصر متابعة لعرض الشبكة هنا.
-      </div>
-    );
-  }
-
   const statusCards: Array<{
     value: StatusTracker['cells'][string][string]['status'] | null;
     title: string;
@@ -621,6 +613,14 @@ function StatusGrid({
     },
     [setStatusEditor]
   );
+
+  if (!tracker.items.length) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border/50 p-4 text-center text-xs text-muted-foreground">
+        أضف عناصر متابعة لعرض الشبكة هنا.
+      </div>
+    );
+  }
 
   return (
     <>
