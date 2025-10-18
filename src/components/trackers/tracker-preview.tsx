@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Check,
   Edit,
+  Eraser,
   Minus,
   NotebookPen,
   Table2,
@@ -113,12 +114,7 @@ export function TrackerPreview({
 
   return (
     <>
-      <Accordion
-        type="single"
-        collapsible
-        className="space-y-3"
-        dir="rtl"
-      >
+      <Accordion type="single" collapsible className="space-y-3" dir="rtl">
         {trackers.map((tracker) => (
           <AccordionItem
             key={tracker.id}
@@ -418,7 +414,8 @@ function StatusGrid({
   sectionId: string;
 }) {
   const { updateTracker } = useAppActions();
-  const [statusEditor, setStatusEditor] = React.useState<StatusEditorState | null>(null);
+  const [statusEditor, setStatusEditor] =
+    React.useState<StatusEditorState | null>(null);
   const openEditor = React.useCallback(
     (itemId: string, isoDate: string) => {
       const cell = tracker.cells?.[itemId]?.[isoDate];
@@ -437,7 +434,8 @@ function StatusGrid({
     },
     [tracker]
   );
-  const [notePreview, setNotePreview] = React.useState<StatusPreviewState | null>(null);
+  const [notePreview, setNotePreview] =
+    React.useState<StatusPreviewState | null>(null);
 
   const openPreview = React.useCallback(
     (itemId: string, isoDate: string) => {
@@ -483,7 +481,14 @@ function StatusGrid({
       cells: nextCells,
     });
     setNotePreview(null);
-  }, [notePreview, tracker.cells, updateTracker, projectId, sectionId, tracker.id]);
+  }, [
+    notePreview,
+    tracker.cells,
+    updateTracker,
+    projectId,
+    sectionId,
+    tracker.id,
+  ]);
 
   const closeEditor = React.useCallback((open: boolean) => {
     if (!open) {
@@ -514,7 +519,8 @@ function StatusGrid({
     itemCells[statusEditor.iso] = {
       status: statusEditor.nextStatus,
       note:
-        statusEditor.nextStatus === 'partial' || statusEditor.nextStatus === 'missed'
+        statusEditor.nextStatus === 'partial' ||
+        statusEditor.nextStatus === 'missed'
           ? trimmed || undefined
           : undefined,
       updatedAt: new Date().toISOString(),
@@ -524,7 +530,14 @@ function StatusGrid({
       cells: nextCells,
     });
     setStatusEditor(null);
-  }, [statusEditor, tracker.cells, updateTracker, projectId, sectionId, tracker.id]);
+  }, [
+    statusEditor,
+    tracker.cells,
+    updateTracker,
+    projectId,
+    sectionId,
+    tracker.id,
+  ]);
 
   if (!tracker.items.length) {
     return (
@@ -534,20 +547,80 @@ function StatusGrid({
     );
   }
 
-  const statusOptions: Array<{
-    value: StatusTracker['cells'][string][string]['status'];
-    label: string;
-    badge: string;
+  const statusCards: Array<{
+    value: StatusTracker['cells'][string][string]['status'] | null;
+    title: string;
+    description: string;
+    accent: string;
+    icon: React.ReactNode;
   }> = [
-    { value: 'done', label: 'تم', badge: 'bg-status-done/20 text-status-done' },
-    { value: 'partial', label: 'جزئي', badge: 'bg-status-partial/20 text-status-partial' },
-    { value: 'missed', label: 'لم يتم', badge: 'bg-status-missed/20 text-status-missed' },
+    {
+      value: 'done',
+      title: 'إنجاز كامل',
+      description: 'أُنجز العنصر كما خُطط له دون ملاحظات إضافية.',
+      accent: 'border-status-done/50 bg-status-done/10 text-status-done',
+      icon: <Check className="size-5" />,
+    },
+    {
+      value: 'partial',
+      title: 'إنجاز جزئي',
+      description: 'أنجزت جزءاً من المهمة وتحتاج لتوثيق ما تبقى.',
+      accent:
+        'border-status-partial/50 bg-status-partial/10 text-status-partial',
+      icon: <Minus className="size-5" />,
+    },
+    {
+      value: 'missed',
+      title: 'لم يتم التنفيذ',
+      description: 'لم يكتمل الإنجاز اليوم—شارك السبب لنتعلم منه.',
+      accent: 'border-status-missed/50 bg-status-missed/10 text-status-missed',
+      icon: <X className="size-5" />,
+    },
+    {
+      value: null,
+      title: 'إزالة الحالة',
+      description: 'إعادة اليوم إلى وضعه المحايد دون أي حالة مسجلة.',
+      accent: 'border-border/60 bg-white/5 text-muted-foreground',
+      icon: <Eraser className="size-5" />,
+    },
   ];
 
   const showNoteField =
-    statusEditor?.nextStatus === 'partial' || statusEditor?.nextStatus === 'missed';
-  const formattedDate = statusEditor ? formatAppDate(statusEditor.iso, 'd MMM yyyy') : null;
-  const previewDate = notePreview ? formatAppDate(notePreview.iso, 'd MMM yyyy') : null;
+    statusEditor?.nextStatus === 'partial' ||
+    statusEditor?.nextStatus === 'missed';
+  const formattedDate = statusEditor
+    ? formatAppDate(statusEditor.iso, 'd MMM yyyy')
+    : null;
+  const previewDate = notePreview
+    ? formatAppDate(notePreview.iso, 'd MMM yyyy')
+    : null;
+  const noteLength = statusEditor ? statusEditor.noteDraft.trim().length : 0;
+  const currentStatusLabel = statusEditor?.currentStatus
+    ? statusLabel(statusEditor.currentStatus)
+    : 'بدون حالة';
+  const nextStatusLabel =
+    statusEditor?.nextStatus !== null && statusEditor?.nextStatus !== undefined
+      ? statusLabel(statusEditor.nextStatus)
+      : 'إزالة الحالة';
+  const statusChanged =
+    statusEditor?.nextStatus !== statusEditor?.currentStatus ||
+    statusEditor?.nextStatus === 'partial' ||
+    statusEditor?.nextStatus === 'missed';
+
+  const handlePickStatus = React.useCallback(
+    (value: StatusTracker['cells'][string][string]['status'] | null) => {
+      setStatusEditor((prev) => {
+        if (!prev) return prev;
+        const needsNote = value === 'partial' || value === 'missed';
+        return {
+          ...prev,
+          nextStatus: value,
+          noteDraft: needsNote ? prev.noteDraft : '',
+        };
+      });
+    },
+    [setStatusEditor]
+  );
 
   return (
     <>
@@ -585,7 +658,9 @@ function StatusGrid({
                   {dateRange.map((date) => {
                     const iso = toAppDateString(date);
                     const cell = dayCells?.[iso];
-                    const isActive = tracker.activeWeekdays.includes(date.getDay());
+                    const isActive = tracker.activeWeekdays.includes(
+                      date.getDay()
+                    );
                     const canPreview =
                       !!cell &&
                       (cell.status === 'partial' || cell.status === 'missed') &&
@@ -603,7 +678,11 @@ function StatusGrid({
                             if (!isActive) return;
                             openEditor(item.id, iso);
                           }}
-                          onPreview={canPreview ? () => openPreview(item.id, iso) : undefined}
+                          onPreview={
+                            canPreview
+                              ? () => openPreview(item.id, iso)
+                              : undefined
+                          }
                         />
                       </td>
                     );
@@ -615,7 +694,10 @@ function StatusGrid({
         </table>
       </div>
 
-      <Dialog open={!!notePreview} onOpenChange={(open) => !open && setNotePreview(null)}>
+      <Dialog
+        open={!!notePreview}
+        onOpenChange={(open) => !open && setNotePreview(null)}
+      >
         <DialogContent className="glass-panel max-w-sm rounded-3xl border border-border/70 text-right shadow-glow-soft">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold text-foreground">
@@ -627,7 +709,8 @@ function StatusGrid({
           </DialogHeader>
           <div className="rounded-2xl border border-border/60 bg-background/60 p-4 text-sm text-foreground leading-relaxed space-y-2">
             <p className="text-xs text-muted-foreground">
-              التاريخ: {previewDate ?? '—'} • الحالة: {notePreview ? statusLabel(notePreview.status) : '—'}
+              التاريخ: {previewDate ?? '—'} • الحالة:{' '}
+              {notePreview ? statusLabel(notePreview.status) : '—'}
             </p>
             <p>{notePreview?.note ?? 'لا توجد ملاحظة مسجلة.'}</p>
           </div>
@@ -663,99 +746,136 @@ function StatusGrid({
       <Sheet open={!!statusEditor} onOpenChange={closeEditor}>
         <SheetContent
           side="bottom"
-          className="glass-panel max-h-[75vh] overflow-y-auto rounded-t-[2rem] border border-border p-6 pb-16 shadow-glow-soft"
+          className="glass-panel max-h-[75vh] overflow-y-auto rounded-t-[2rem] border border-border shadow-glow-soft"
         >
           <SheetHeader className="text-right">
-            <SheetTitle>تحديث الحالة</SheetTitle>
+            <SheetTitle>
+              <span>تحديث الحالة</span>
+            </SheetTitle>
             <SheetDescription>
-              {statusEditor?.trackerTitle} • {statusEditor?.itemLabel}
+              <div className="flex justify-between items-center">
+                <span>
+                  {statusEditor?.trackerTitle} • {statusEditor?.itemLabel}
+                </span>
+                {formattedDate ?? '—'}
+              </div>
             </SheetDescription>
           </SheetHeader>
 
           {statusEditor ? (
-            <div className="mt-6 space-y-4 text-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                {statusOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={cn(
-                      'rounded-full border border-border/60 px-4 py-1 text-xs transition',
-                      statusEditor.nextStatus === option.value
-                        ? `${option.badge} shadow-glow-soft`
-                        : 'bg-white/5 text-muted-foreground hover:bg-white/10'
-                    )}
-                    onClick={() =>
-                      setStatusEditor((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              nextStatus: option.value,
-                              noteDraft:
-                                option.value === 'partial' || option.value === 'missed'
-                                  ? prev.noteDraft
-                                  : '',
-                            }
-                          : prev
-                      )
-                    }
-                  >
-                    {option.label}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  className={cn(
-                    'rounded-full border border-border/60 px-4 py-1 text-xs text-muted-foreground hover:bg-white/10',
-                    statusEditor.nextStatus === null && 'bg-muted text-foreground shadow-glow-soft'
-                  )}
-                  onClick={() =>
-                    setStatusEditor((prev) =>
-                      prev
-                        ? {
-                            ...prev,
-                            nextStatus: null,
-                            noteDraft: '',
-                          }
-                        : prev
-                    )
-                  }
-                >
-                  إزالة الحالة
-                </button>
+            <div className="mt-6 space-y-6 text-sm">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold text-muted-foreground">
+                    اختر الحالة
+                  </p>
+                  <span className="rounded-full bg-status-done/10 px-3 py-1 text-center text-status-done text-xs">
+                    الحالة الحالية: {currentStatusLabel}
+                  </span>
+                  {!statusChanged ? (
+                    <span className="text-[11px] text-muted-foreground/80">
+                      لم يتم اختيار حالة جديدة بعد
+                    </span>
+                  ) : null}
+                </div>
+                <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+                  {statusCards.map((card) => {
+                    const isActive = statusEditor.nextStatus === card.value;
+                    return (
+                      <button
+                        key={card.title}
+                        type="button"
+                        onClick={() => handlePickStatus(card.value)}
+                        className={cn(
+                          'rounded-3xl border p-4 text-right transition shadow-sm hover:shadow-glow-soft text-xs sm:text-sm',
+                          isActive
+                            ? `${card.accent} shadow-glow-soft`
+                            : 'border-border/60 bg-white/5 text-muted-foreground hover:bg-white/10'
+                        )}
+                        aria-pressed={isActive}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className={cn(
+                              'grid size-9 place-content-center rounded-2xl border',
+                              isActive
+                                ? 'border-current bg-background/70'
+                                : 'border-border/40 bg-background/60'
+                            )}
+                          >
+                            {card.icon}
+                          </span>
+                          {isActive ? (
+                            <span className="rounded-full border border-current/40 px-2 py-0.5 text-[11px]">
+                              مختارة
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="mt-3 space-y-1">
+                          <p className="text-sm font-semibold text-foreground">
+                            {card.title}
+                          </p>
+                          <p className="text-[11px] leading-5 text-muted-foreground">
+                            {card.description}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              {showNoteField ? (
+              {showNoteField && (
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-muted-foreground">
-                    ملاحظة مرافقة (اختياري)
-                  </label>
+                  <div className="flex items-center justify-between gap-2">
+                    <label
+                      htmlFor="status-note-field"
+                      className="text-xs font-semibold text-muted-foreground"
+                    >
+                      ملاحظة مرافقة
+                    </label>
+                    {showNoteField ? (
+                      <span className="text-[11px] text-muted-foreground/80">
+                        {noteLength} حرف
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground/70">
+                        لا حاجة لملاحظة مع هذه الحالة
+                      </span>
+                    )}
+                  </div>
                   <Textarea
+                    id="status-note-field"
                     rows={4}
+                    disabled={!showNoteField}
                     value={statusEditor.noteDraft}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      if (!showNoteField) return;
+                      const nextNote = event.target.value;
                       setStatusEditor((prev) =>
-                        prev ? { ...prev, noteDraft: event.target.value } : prev
-                      )
+                        prev ? { ...prev, noteDraft: nextNote } : prev
+                      );
+                    }}
+                    className={cn(
+                      'w-full rounded-3xl border border-border/60 bg-white/5 p-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition',
+                      !showNoteField && 'cursor-not-allowed opacity-50'
+                    )}
+                    placeholder={
+                      'اكتب ما حدث اليوم، مثل سبب التعثر أو ما تم إنجازه.'
                     }
-                    className="w-full rounded-2xl border border-border/60 bg-white/5 p-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    placeholder="اكتب تفاصيل إضافية حول هذه الحالة"
                   />
                 </div>
-              ) : null}
-
-              <div className="rounded-2xl border border-border/60 bg-white/5 p-3 text-xs text-muted-foreground">
-                <p>التاريخ: {formattedDate ?? '—'}</p>
-                <p className="mt-1">
-                  الحالة الحالية: {statusEditor.currentStatus ? statusLabel(statusEditor.currentStatus) : 'بدون حالة'}
-                </p>
-                <p className="mt-1">
-                  الحالة الجديدة: {statusEditor.nextStatus ? statusLabel(statusEditor.nextStatus) : 'إزالة الحالة'}
-                </p>
-              </div>
+              )}
             </div>
           ) : null}
           <SheetFooter className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              className="rounded-full bg-primary px-6 text-primary-foreground shadow-glow-soft"
+              onClick={commitStatus}
+            >
+              حفظ الحالة
+            </Button>
             <Button
               type="button"
               variant="ghost"
@@ -763,13 +883,6 @@ function StatusGrid({
               onClick={() => setStatusEditor(null)}
             >
               إلغاء
-            </Button>
-            <Button
-              type="button"
-              className="rounded-full bg-primary px-6 text-primary-foreground shadow-glow-soft"
-              onClick={commitStatus}
-            >
-              حفظ الحالة
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -970,7 +1083,7 @@ function NotesGrid({
       <Sheet open={!!editing} onOpenChange={handleCloseSheet}>
         <SheetContent
           side="bottom"
-          className="glass-panel max-h-[75vh] overflow-y-auto rounded-t-[2rem] border border-border p-6 pb-16 shadow-glow-soft"
+          className="glass-panel max-h-[75vh] overflow-y-auto rounded-t-[2rem] border border-border shadow-glow-soft"
         >
           <SheetHeader className="text-right">
             <SheetTitle>تحرير الملاحظة</SheetTitle>
