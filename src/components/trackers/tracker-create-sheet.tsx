@@ -263,8 +263,8 @@ export function TrackerCreateSheet({
                     متابعة بالملاحظات
                   </TabsTrigger>
                 </TabsList>
-                <TabsContent value="status" />
-                <TabsContent value="notes" />
+                <TabsContent value="status" className='hidden' />
+                <TabsContent value="notes"  className='hidden'/>
               </Tabs>
 
               <FormField
@@ -358,7 +358,7 @@ export function TrackerCreateSheet({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>النطاق الزمني</FormLabel>
-                    <div className="flex flex-wrap items-center justify-end gap-2">
+                    <div className="flex flex-wrap items-center justify-start gap-2">
                       {[
                         { value: 'week', label: 'أسبوع' },
                         { value: 'two-weeks', label: 'أسبوعان' },
@@ -395,7 +395,7 @@ export function TrackerCreateSheet({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>الأيام الفاعلة</FormLabel>
-                    <div className="flex flex-wrap justify-end gap-2">
+                    <div className="flex flex-wrap justify-start gap-2">
                       {weekdayLabels.map((label, index) => {
                         const selected = field.value.includes(index);
                         return (
