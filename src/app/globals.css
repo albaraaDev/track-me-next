@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  direction: rtl;
+  scroll-behavior: smooth;
+}
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 10%;
+    --primary: 224 76% 48%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 216 33% 91%;
+    --secondary-foreground: 222 47% 18%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 222 25% 36%;
+    --accent: 208 100% 97%;
+    --accent-foreground: 222 46% 22%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 215 27% 86%;
+    --input: 215 27% 86%;
+    --ring: 224 76% 48%;
+    --chart-1: 212 92% 45%;
+    --chart-2: 158 69% 44%;
+    --chart-3: 43 96% 59%;
+    --chart-4: 275 71% 66%;
+    --chart-5: 350 74% 55%;
+    --status-done: 148 69% 41%;
+    --status-partial: 40 96% 55%;
+    --status-missed: 0 84% 60%;
+    --status-reset: 215 20% 70%;
+    --surface-glass: rgba(255, 255, 255, 0.72);
+    --surface-muted: rgba(255, 255, 255, 0.5);
+    --surface-border: rgba(255, 255, 255, 0.3);
+    --surface-highlight: rgba(255, 255, 255, 0.85);
+    --surface-shadow: rgba(15, 23, 42, 0.24);
+    --background-veil: rgba(255, 255, 255, 0.35);
+    --radius: 0.9rem;
+  }
+
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 210 40% 96%;
+    --card: 225 32% 14%;
+    --card-foreground: 210 40% 96%;
+    --popover: 225 32% 14%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 221 83% 72%;
+    --primary-foreground: 222 47% 8%;
+    --secondary: 220 22% 24%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 220 22% 20%;
+    --muted-foreground: 214 32% 80%;
+    --accent: 215 27% 16%;
+    --accent-foreground: 213 39% 90%;
+    --destructive: 0 63% 52%;
+    --destructive-foreground: 210 40% 96%;
+    --border: 217 25% 30%;
+    --input: 217 25% 30%;
+    --ring: 221 83% 70%;
+    --chart-1: 221 83% 70%;
+    --chart-2: 160 70% 50%;
+    --chart-3: 32 94% 60%;
+    --chart-4: 281 66% 66%;
+    --chart-5: 340 72% 62%;
+    --status-done: 149 65% 58%;
+    --status-partial: 40 96% 62%;
+    --status-missed: 0 74% 56%;
+    --status-reset: 215 18% 56%;
+    --surface-glass: rgba(17, 24, 39, 0.75);
+    --surface-muted: rgba(17, 24, 39, 0.55);
+    --surface-border: rgba(148, 163, 184, 0.22);
+    --surface-highlight: rgba(255, 255, 255, 0.1);
+    --surface-shadow: rgba(2, 6, 23, 0.55);
+    --background-veil: rgba(17, 24, 39, 0.4);
+  }
+
+  * {
+    @apply border-border antialiased;
+  }
+
+  body {
+    @apply bg-background text-foreground min-h-screen;
+    background-color: hsl(var(--background));
+    background-image: 
+      radial-gradient(1200px at 10% 10%, rgba(59, 130, 246, 0.18), transparent 60%),
+      radial-gradient(1000px at 90% 0%, rgba(244, 114, 182, 0.15), transparent 55%),
+      var(--background-veil);
+    background-attachment: fixed;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(900px at 50% 0%, rgba(255, 255, 255, 0.35), transparent 60%);
+    mix-blend-mode: screen;
+    opacity: 0.35;
+    z-index: -1;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .glass-panel {
+    backdrop-filter: blur(12px);
+    background: var(--surface-glass);
+    box-shadow: 0 12px 35px -18px var(--surface-shadow);
+    border: 1px solid var(--surface-border);
+  }
+
+  .glass-panel-muted {
+    backdrop-filter: blur(10px);
+    background: var(--surface-muted);
+    border: 1px solid var(--surface-border);
+  }
+
+  .glass-highlight {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.1));
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .mask-edge {
+    mask-image: linear-gradient(180deg, transparent, black 10%, black 90%, transparent);
+  }
+}
