@@ -76,7 +76,7 @@ export function ProjectFilters({ projectId }: ProjectFiltersProps) {
 
   return (
     <section className="space-y-6 text-sm">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <header className="flex items-end justify-between gap-4">
         <div className="flex items-center gap-3 text-foreground">
           <span className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-glow-soft">
             <Filter className="size-5" />
