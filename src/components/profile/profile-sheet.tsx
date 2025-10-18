@@ -94,7 +94,7 @@ export function ProfileSheet({ open, onOpenChange }: ProfileSheetProps) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="glass-panel max-h-[75vh] overflow-y-auto rounded-t-[2rem] border border-border p-6 pb-16 shadow-glow-soft"
+        className="glass-panel max-h-[75vh] overflow-y-auto rounded-t-[2rem] border border-border shadow-glow-soft"
       >
         <SheetHeader className="text-right">
           <SheetTitle>تخصيص الهوية</SheetTitle>

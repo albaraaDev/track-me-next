@@ -129,7 +129,7 @@ export function SectionCreateSheet({ projectId, open, onOpenChange }: SectionCre
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side="bottom"
-        className="glass-panel max-h-[80vh] overflow-y-auto rounded-t-[2rem] border border-border p-6 pb-16 shadow-glow-soft sm:max-h-[70vh]"
+        className="glass-panel max-h-[80vh] overflow-y-auto rounded-t-[2rem] border border-border p-6 shadow-glow-soft sm:max-h-[90vh]"
       >
         <SheetHeader className="text-right">
           <SheetTitle>قسم جديد</SheetTitle>

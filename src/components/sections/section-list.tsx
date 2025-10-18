@@ -41,8 +41,7 @@ export function SectionList({ projectId, sections, onCreate, onEdit, onDelete }:
     <section className="flex flex-col gap-4">
       <header className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">أقسام المشروع</p>
-          <h2 className="text-xl font-semibold">كل الأقسام المرتبطة بهذا المشروع</h2>
+          <h2 className="text-xl font-semibold">أقسام المشروع</h2>
         </div>
         <Button
           className="rounded-full bg-primary px-5 text-primary-foreground shadow-glow-soft"

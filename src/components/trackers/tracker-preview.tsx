@@ -33,7 +33,7 @@ export function TrackerPreview({ trackers, projectId, sectionId }: TrackerPrevie
   }
 
   return (
-    <Accordion type="single" collapsible className="glass-panel rounded-3xl p-4 shadow-glass">
+    <Accordion type="single" collapsible className="glass-panel rounded-3xl p-4 shadow-glass space-y-3" dir="rtl">
       {trackers.map((tracker) => (
         <AccordionItem
           key={tracker.id}
@@ -41,7 +41,7 @@ export function TrackerPreview({ trackers, projectId, sectionId }: TrackerPrevie
           className="rounded-2xl border border-border/50 bg-white/5 px-4 backdrop-blur"
         >
           <AccordionTrigger className="flex items-center justify-between gap-3 py-3 text-right text-sm font-medium text-foreground">
-            <div className="flex flex-col items-end gap-1">
+            <div className="flex flex-col items-start gap-1">
               <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
                 <span className="text-xl">{tracker.icon || (tracker.type === "status" ? "📊" : "📝")}</span>
                 {tracker.title}
@@ -51,7 +51,7 @@ export function TrackerPreview({ trackers, projectId, sectionId }: TrackerPrevie
               </span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="space-y-4 py-4">
+          <AccordionContent className="space-y-4">
             <TrackerMeta tracker={tracker} />
             {tracker.type === "status" ? (
               <StatusTrackerPreview tracker={tracker} projectId={projectId} sectionId={sectionId} />
@@ -67,24 +67,25 @@ export function TrackerPreview({ trackers, projectId, sectionId }: TrackerPrevie
 
 function TrackerMeta({ tracker }: { tracker: Tracker }) {
   return (
-    <div className="grid gap-3 rounded-2xl bg-white/5 p-3 text-xs text-muted-foreground sm:grid-cols-3">
-      <div className="flex items-center justify-end gap-2">
+    <div className="grid gap-3 rounded-2xl bg-white/5 p-3 text-xs text-muted-foreground grid-cols-2 sm:grid-cols-3">
+      <div className="flex items-center gap-2">
+        <CalendarDays className="size-4 text-primary" />
         <div>
           <p>تاريخ البداية</p>
           <p className="text-foreground">{formatDate(tracker.startDate)}</p>
         </div>
-        <CalendarDays className="size-4 text-primary" />
       </div>
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center gap-2">
+        <CalendarDays className="size-4 text-primary/70" />
         <div>
           <p>تاريخ النهاية</p>
           <p className="text-foreground">
             {tracker.endDate ? formatDate(tracker.endDate) : "متابعة مفتوحة"}
           </p>
         </div>
-        <CalendarDays className="size-4 text-primary/70" />
       </div>
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center gap-2 max-sm:col-span-2">
+        <Table2 className="size-4 text-primary/70" />
         <div>
           <p>الأيام الفاعلة</p>
           <p className="text-foreground">
@@ -93,7 +94,6 @@ function TrackerMeta({ tracker }: { tracker: Tracker }) {
               : tracker.activeWeekdays.map((day) => weekdayLabels[day]).join("، ")}
           </p>
         </div>
-        <Table2 className="size-4 text-primary/70" />
       </div>
     </div>
   );
@@ -136,49 +136,6 @@ function StatusTrackerPreview({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 text-xs sm:grid-cols-2">
-        <div className="rounded-2xl border border-border/60 p-3">
-          <p className="text-muted-foreground">عدد العناصر</p>
-          <p className="text-lg font-semibold text-foreground">{tracker.items.length}</p>
-        </div>
-        <div className="rounded-2xl border border-border/60 p-3">
-          <p className="text-muted-foreground">إجمالي السجلات</p>
-          <p className="text-lg font-semibold text-foreground">{summary.total}</p>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
-        {Object.entries(summary.counts).map(([key, value]) => (
-          <span
-            key={key}
-            className={cn(
-              "rounded-full px-3 py-1",
-              key === "done"
-                ? "bg-status-done/15 text-status-done"
-                : key === "partial"
-                ? "bg-status-partial/15 text-status-partial"
-                : key === "missed"
-                ? "bg-status-missed/15 text-status-missed"
-                : "bg-status-reset/15 text-status-reset",
-            )}
-          >
-            {statusLabel(key)}: {value}
-          </span>
-        ))}
-      </div>
-
-      <div className="rounded-2xl border border-dashed border-border/60 p-3 text-xs text-muted-foreground">
-        <strong className="text-foreground">عناصر عينة:</strong>{" "}
-        {previewItems.length
-          ? previewItems.map((item) => item.label).join("، ")
-          : "لم تتم إضافة عناصر بعد."}
-        <br />
-        <strong className="text-foreground">أيام المتابعة:</strong>{" "}
-        {sampleWeekdays.length
-          ? sampleWeekdays.map((day) => weekdayLabels[day]).join("، ")
-          : "لم يتم تحديد الأيام الفاعلة."}
-      </div>
-
       {summary.notes.length ? (
         <div className="rounded-2xl border border-border/60 bg-white/5 p-3 text-xs text-muted-foreground">
           <p className="text-foreground">ملاحظات حديثة:</p>
@@ -216,37 +173,6 @@ function NotesTrackerPreview({
 
   return (
     <div className="space-y-4 text-xs text-muted-foreground">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-border/60 p-3">
-          <p>عدد العناصر</p>
-          <p className="text-lg font-semibold text-foreground">{tracker.items.length}</p>
-        </div>
-        <div className="rounded-2xl border border-border/60 p-3">
-          <p>عدد الملاحظات المسجلة</p>
-          <p className="text-lg font-semibold text-foreground">
-            {entries.reduce((sum, item) => sum + item.notes.length, 0)}
-          </p>
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-dashed border-border/60 p-3">
-        <p className="text-foreground">مقتطفات:</p>
-        <ul className="mt-2 space-y-2">
-          {entries.some((entry) => entry.notes.length) ? (
-            entries.slice(0, 3).map((entry) => (
-              <li key={entry.label} className="space-y-1">
-                <p className="font-semibold text-foreground">{entry.label}</p>
-                <p className="line-clamp-2 text-xs text-muted-foreground">
-                  {entry.notes[0] ?? "لم يتم تسجيل ملاحظات بعد."}
-                </p>
-              </li>
-            ))
-          ) : (
-            <li>لم يتم تسجيل ملاحظات بعد.</li>
-          )}
-        </ul>
-      </div>
-
       <NotesGrid tracker={tracker} projectId={projectId} sectionId={sectionId} />
     </div>
   );
@@ -342,11 +268,11 @@ function StatusGrid({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-2xl border border-border/60">
       <table className="min-w-full border-separate border-spacing-0 text-xs">
         <thead>
           <tr>
-            <th className="sticky right-0 bg-background/80 px-4 py-3 text-start font-semibold text-foreground shadow-[2px_0_6px_rgba(15,23,42,0.08)] backdrop-blur">
+            <th className="sticky right-0 z-10 bg-background px-4 py-3 text-center font-semibold text-foreground shadow-[2px_0_6px_rgba(15,23,42,0.08)] backdrop-blur">
               العنصر
             </th>
             {dateRange.map((date) => {
@@ -370,7 +296,7 @@ function StatusGrid({
             const dayCells = tracker.cells?.[item.id] ?? {};
             return (
               <tr key={item.id} className="border-t border-border/60">
-                <td className="sticky right-0 bg-background/90 min-w-[115px] px-4 py-3 text-sm text-center text-foreground shadow-[2px_0_6px_rgba(15,23,42,0.08)] backdrop-blur">
+                <td className="sticky right-0 z-10 bg-background min-w-[115px] px-4 py-3 text-sm text-center text-foreground shadow-[2px_0_6px_rgba(15,23,42,0.08)] backdrop-blur">
                   {item.label}
                 </td>
                 {dateRange.map((date) => {
@@ -447,7 +373,7 @@ function NotesGrid({
       <table className="min-w-full border-separate border-spacing-0 text-xs">
         <thead>
           <tr>
-            <th className="sticky right-0 bg-background/80 px-4 py-3 text-start font-semibold text-foreground shadow-[2px_0_6px_rgba(15,23,42,0.08)] backdrop-blur">
+            <th className="sticky right-0 z-10 bg-background px-4 py-3 text-center font-semibold text-foreground shadow-[2px_0_6px_rgba(15,23,42,0.08)] backdrop-blur">
               العنصر
             </th>
             {dateRange.map((date) => {
@@ -471,7 +397,7 @@ function NotesGrid({
             const cells = tracker.cells?.[item.id] ?? {};
             return (
               <tr key={item.id} className="border-t border-border/60">
-                <td className="sticky right-0 bg-background/90 min-w-[115px] px-4 py-3 text-sm text-center text-foreground shadow-[2px_0_6px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+                <td className="sticky right-0 z-10 bg-background min-w-[115px] px-4 py-3 text-sm text-center text-foreground shadow-[2px_0_6px_rgba(15,23,42,0.08)] backdrop-blur-sm">
                   {item.label}
                 </td>
                 {dateRange.map((date) => {

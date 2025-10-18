@@ -44,7 +44,7 @@ export function MainHeader({
           <button
             type="button"
             onClick={onRequestProfile}
-            className="group relative flex size-16 items-center justify-center rounded-2xl border border-white/40 text-lg font-semibold text-white shadow-inner transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary"
+            className="group relative flex size-12 items-center justify-center rounded-2xl border border-white/40 text-lg font-semibold text-white shadow-inner transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary shrink-0"
             style={{
               background: profile.avatarColor,
             }}
@@ -57,9 +57,6 @@ export function MainHeader({
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">مرحباً {profile.displayName}</p>
             <h2 className="text-lg font-semibold text-foreground sm:text-xl">{greeting}</h2>
-            <p className="text-xs text-muted-foreground">
-              اضغط على الأفتار لتخصيص الهوية، أو استخدم الأدوات الجانبية للاستيراد والتصدير.
-            </p>
           </div>
         </div>
 
@@ -67,7 +64,7 @@ export function MainHeader({
           <Button
             variant="ghost"
             size="sm"
-            className="glass-panel-muted hidden border border-border/60 text-xs text-foreground shadow-glow-soft hover:bg-card sm:inline-flex size-10"
+            className="glass-panel-muted border border-border/60 text-xs text-foreground shadow-glow-soft hover:bg-card inline-flex size-10"
             onClick={onRequestImport}
           >
             <UploadCloud className="size-4 text-green-500" />
@@ -75,7 +72,7 @@ export function MainHeader({
           <Button
             variant="ghost"
             size="sm"
-            className="glass-panel-muted hidden border border-border/60 text-xs text-foreground shadow-glow-soft hover:bg-card sm:inline-flex size-10"
+            className="glass-panel-muted border border-border/60 text-xs text-foreground shadow-glow-soft hover:bg-card inline-flex size-10"
             onClick={onRequestExport}
           >
             <DownloadCloud className="size-4 text-red-500" />

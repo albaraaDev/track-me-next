@@ -58,7 +58,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
 
   return (
     <>
-      <article className="glass-panel relative overflow-hidden rounded-3xl p-5 shadow-glass transition hover:shadow-glow-soft">
+      <Link href={`/projects/${project.id}`} className="glass-panel relative overflow-hidden rounded-3xl p-5 shadow-glass transition hover:shadow-glow-soft">
         <div className="absolute inset-0 z-0 bg-gradient-to-br from-primary/5 via-primary/0 to-accent/10" />
         <div className="relative z-10 flex flex-col gap-4">
           <header className="flex items-start justify-between gap-3">
@@ -92,7 +92,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
             </DropdownMenu>
           </header>
 
-          <dl className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-3">
+          <dl className="grid gap-3 text-xs text-muted-foreground grid-cols-2 sm:grid-cols-3">
             <div className="flex items-center gap-2 rounded-2xl bg-white/5 p-3 backdrop-blur">
               <CalendarDays className="size-4 text-primary" />
               <div>
@@ -107,7 +107,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
                 <dd className="text-foreground">{project.endDate ? formatDate(project.endDate) : "مفتوح"}</dd>
               </div>
             </div>
-            <div className="flex items-center gap-2 rounded-2xl bg-white/5 p-3 backdrop-blur">
+            <div className="flex items-center gap-2 rounded-2xl bg-white/5 p-3 backdrop-blur max-sm:col-span-2">
               <Layers className="size-4 text-primary/70" />
               <div>
                 <dt>الأقسام</dt>
@@ -126,12 +126,12 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
               <Table2 className="size-3.5" />
               {trackersCount > 0 ? `${trackersCount} جدول متابعة` : "لم يتم إضافة جداول بعد"}
             </div>
-            <Button asChild size="sm" className="rounded-full bg-primary text-primary-foreground shadow-glow-soft">
+            {/* <Button asChild size="sm" className="rounded-full bg-primary text-primary-foreground shadow-glow-soft">
               <Link href={`/projects/${project.id}`}>فتح المشروع</Link>
-            </Button>
+            </Button> */}
           </div>
         </div>
-      </article>
+      </Link>
 
       <ProjectEditSheet projectId={project.id} open={isEditOpen} onOpenChange={setIsEditOpen} />
       <ProjectDeleteDialog
