@@ -4,6 +4,7 @@ import * as React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "./theme-provider";
 import { useAppActions, useAppStore } from "@/store/app-store";
+import { PWARegister } from "@/components/pwa-register";
 
 type AppProvidersProps = {
   children: React.ReactNode;
@@ -42,7 +43,10 @@ export function AppProviders({ children }: AppProvidersProps) {
 
   return (
     <ThemeProvider>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        {children}
+        <PWARegister />
+      </QueryClientProvider>
     </ThemeProvider>
   );
 }
