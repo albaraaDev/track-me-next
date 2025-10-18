@@ -116,7 +116,7 @@ export function TrackerPreview({
       <Accordion
         type="single"
         collapsible
-        className="glass-panel rounded-3xl p-4 shadow-glass space-y-3"
+        className="space-y-3"
         dir="rtl"
       >
         {trackers.map((tracker) => (
