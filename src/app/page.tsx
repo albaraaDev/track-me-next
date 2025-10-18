@@ -42,6 +42,8 @@ export default function Home() {
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const { hydrate, setLastBackupAt } = useAppActions();
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+  const [isClient, setIsClient] = React.useState(false);
+  const hasHydrated = useAppStore((state) => state.hasHydrated);
 
   const showFeedback = React.useCallback((type: "success" | "error", message: string) => {
     setFeedback({ type, message });
@@ -116,6 +118,24 @@ export default function Home() {
     const timeout = window.setTimeout(() => setFeedback(null), 5000);
     return () => window.clearTimeout(timeout);
   }, [feedback]);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient || !hasHydrated) {
+    return (
+      <AppShell
+        header={
+          <div className="flex flex-col gap-4">
+            <div className="glass-panel h-32 rounded-3xl animate-pulse" />
+          </div>
+        }
+      >
+        <section className="glass-panel h-64 rounded-3xl animate-pulse" />
+      </AppShell>
+    );
+  }
 
   return (
     <>

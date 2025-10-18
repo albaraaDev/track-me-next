@@ -36,15 +36,7 @@ const ProjectStats = dynamic(
     import('@/components/projects/project-stats').then(
       (mod) => mod.ProjectStats
     ),
-  {
-    ssr: false,
-    loading: () => (
-      <section
-        className="glass-panel h-64 rounded-3xl animate-pulse"
-        aria-hidden="true"
-      />
-    ),
-  }
+  { ssr: false }
 );
 
 type ProjectPageProps = {
@@ -124,15 +116,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-2 rounded-2xl bg-primary/5 p-3 text-xs text-primary shrink-0">
                         <Table2 className="size-4" />
-                        {trackerCount > 0
-                          ? `${
-                              trackerCount === 1
-                                ? 'جدول متابعة واحد'
-                                : trackerCount === 2
-                                ? 'جدولا متابعة'
-                                : trackerCount + ' جداول متابعة'
-                            } `
-                          : 'لا توجد جداول بعد'}
+                        {trackerCount > 0 ? trackerCount : 'لا توجد جداول بعد'}
                       </div>
                       <Button
                         type="button"
@@ -151,16 +135,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       : 'أضف نبذة ملهمة للمشروع لعرضها هنا.'}
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="glass-panel-muted size-10 rounded-3xl border border-border/60 text-muted-foreground hover:text-foreground"
-                  aria-label="تعديل الهوية الشخصية"
-                  onClick={() => setIsProfileOpen(true)}
-                >
-                  <User2 className="size-5" />
-                </Button>
               </div>
 
               <div className="grid gap-3 text-xs text-muted-foreground grid-cols-2 sm:grid-cols-3">

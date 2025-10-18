@@ -93,16 +93,6 @@ export default function SectionPage({ params }: SectionPageProps) {
                       : 'أضف وصفاً للقسم لتتذكر هدفه ودوره داخل المشروع.'}
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="glass-panel-muted size-10 rounded-3xl border border-border/60 text-muted-foreground hover:text-foreground"
-                  aria-label="تعديل الهوية الشخصية"
-                  onClick={() => setIsProfileOpen(true)}
-                >
-                  <User2 className="size-5" />
-                </Button>
               </div>
 
               <div className="grid gap-3 text-xs text-muted-foreground grid-cols-2">
