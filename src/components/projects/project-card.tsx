@@ -95,7 +95,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                align="end"
+                align="start"
                 className="glass-panel rounded-2xl border border-border/50"
               >
                 <DropdownMenuItem onSelect={handleEdit}>
