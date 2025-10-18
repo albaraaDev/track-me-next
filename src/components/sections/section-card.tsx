@@ -72,7 +72,7 @@ export function SectionCard({
               href={`/projects/${projectId}/sections/${section.id}`}
               className="flex items-center gap-3 flex-1"
             >
-              <div className="flex size-12 items-center justify-center rounded-2xl border border-border/60 bg-white/25 text-2xl backdrop-blur">
+              <div className="flex size-12 items-center justify-center rounded-2xl border border-border/60 bg-white/25 text-2xl backdrop-blur shrink-0">
                 <span aria-hidden>{section.icon || '📂'}</span>
               </div>
               <div>
@@ -89,22 +89,14 @@ export function SectionCard({
             <div className="flex gap-2 items-center">
               <span
                 className={cn(
-                  'flex items-center gap-2 rounded-full px-3 py-1 text-xs',
+                  'flex items-center gap-2 rounded-full px-2 py-1 text-xs',
                   trackersCount > 0
                     ? 'bg-primary/10 text-primary'
                     : 'bg-muted text-muted-foreground'
                 )}
               >
                 <Table2 className="size-3.5" />
-                {trackersCount > 0
-                  ? `${
-                      trackersCount === 1
-                        ? 'جدول متابعة واحد'
-                        : trackersCount === 2
-                        ? 'جدولا متابعة'
-                        : trackersCount + ' جداول متابعة'
-                    } `
-                  : 'لا توجد جداول بعد'}
+                {trackersCount > 0 ? trackersCount : 'لا توجد جداول بعد'}
               </span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
