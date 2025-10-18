@@ -63,14 +63,6 @@ export function SectionList({ projectId, sections, onCreate, onEdit, onDelete }:
           />
         ))}
       </div>
-
-      <div className="rounded-3xl border border-dashed border-border/70 p-6 text-center text-sm text-muted-foreground">
-        تبحث عن المزيد؟ يمكنك الانتقال مباشرة إلى أي قسم من الأقسام السابقة أو{" "}
-        <Link href={`/projects/${projectId}`} className="text-primary underline underline-offset-4">
-          العودة إلى المشروع
-        </Link>{" "}
-        لتغيير ترتيبهما.
-      </div>
     </section>
   );
 }

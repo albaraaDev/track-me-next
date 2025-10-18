@@ -117,7 +117,7 @@ export function SectionCard({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
-                  align="end"
+                  align="start"
                   className="glass-panel rounded-2xl border border-border/50"
                 >
                   <DropdownMenuItem onSelect={handleEdit}>

@@ -75,6 +75,9 @@ type AppActions = {
   markOnboardingComplete: () => void;
   setFilters: (payload: Partial<FilterState>) => void;
   resetFilters: () => void;
+  toggleFilterProject: (projectId: string) => void;
+  toggleFilterSection: (projectId: string, sectionId: string) => void;
+  setFilterRange: (from: string | null, to?: string | null) => void;
   setLastBackupAt: (isoString: string | null) => void;
   addProject: (project: Project) => void;
   updateProject: (projectId: string, payload: Partial<Project>) => void;
@@ -142,12 +145,65 @@ export const useAppStore = create<AppStore>()(
                 .parse(payload),
             },
           })),
+        toggleFilterProject: (projectId) =>
+          set((state) => {
+            const current = new Set(state.filters.projectIds ?? []);
+            if (current.has(projectId)) {
+              current.delete(projectId);
+            } else {
+              current.add(projectId);
+            }
+            return {
+              filters: {
+                ...state.filters,
+                projectIds: Array.from(current),
+              },
+            };
+          }),
+        toggleFilterSection: (projectId, sectionId) =>
+          set((state) => {
+            const current = new Set(
+              (state.filters.sectionIds ?? []).map(
+                (entry) => `${entry.projectId}::${entry.sectionId}`,
+              ),
+            );
+            const key = `${projectId}::${sectionId}`;
+            if (current.has(key)) {
+              current.delete(key);
+            } else {
+              current.add(key);
+            }
+            return {
+              filters: {
+                ...state.filters,
+                sectionIds: Array.from(current).map((entry) => {
+                  const [projId, sectId] = entry.split('::');
+                  return { projectId: projId, sectionId: sectId };
+                }),
+              },
+            };
+          }),
+        setFilterRange: (from, to) =>
+          set((state) => ({
+            filters: {
+              ...state.filters,
+              customRange:
+                from && from.trim()
+                  ? {
+                      from,
+                      to: to?.trim() || null,
+                    }
+                  : undefined,
+            },
+          })),
         resetFilters: () =>
           set((state) => ({
             filters: {
               searchTerm: "",
               timeframe: "month",
               includeOpenEnded: true,
+              projectIds: [],
+              sectionIds: [],
             },
           })),
         setLastBackupAt: (isoString) => set(() => ({ lastBackupAt: isoString })),

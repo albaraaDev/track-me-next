@@ -2,23 +2,19 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import {
-  ArrowRight,
-  CalendarDays,
-  Layers,
-  Table2,
-  Sparkles,
-} from 'lucide-react';
+import { ArrowRight, CalendarDays, Layers, Table2 } from 'lucide-react';
 import { ar } from 'date-fns/locale';
 import { AppShell } from '@/components/layout/app-shell';
 import { MainHeader } from '@/components/layout/main-header';
 import { SectionList } from '@/components/sections/section-list';
 import { SectionCreateSheet } from '@/components/sections/section-create-sheet';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppStore } from '@/store/app-store';
 import { ProfileSheet } from '@/components/profile/profile-sheet';
 import { formatAppDate } from '@/lib/date';
+import { ProjectOverview } from '@/components/projects/project-overview';
+import { ProjectStats } from '@/components/projects/project-stats';
+import { computeProjectMetrics } from '@/lib/stats';
 
 type ProjectPageProps = {
   params: { projectId: string };
@@ -35,6 +31,11 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       (state) => state.projects.find((item) => item.id === params.projectId),
       [params.projectId]
     )
+  );
+  const filters = useAppStore((state) => state.filters);
+  const metrics = React.useMemo(
+    () => computeProjectMetrics(project, filters),
+    [project, filters]
   );
 
   const sections = project?.sections ?? [];
@@ -143,14 +144,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         </TabsList>
 
         <TabsContent value="overview" className="mt-0 space-y-4">
-          <section className="glass-panel rounded-3xl p-6 shadow-glass animate-fade-in-up text-center">
-            <Sparkles className="mx-auto size-10 text-primary" />
-            <h3 className="mt-3 text-lg font-semibold">ملخص المشروع</h3>
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-              أنشئ أقسامك الأولى وابدأ بتوزيع الجداول. سنعرض هنا ملخصات ذكية عن
-              نشاط المشروع، التزامك، وأوقات الذروة عند توفر البيانات.
-            </p>
-          </section>
+          <ProjectOverview project={project} metrics={metrics} />
         </TabsContent>
 
         <TabsContent value="sections" className="mt-0">
@@ -162,21 +156,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         </TabsContent>
 
         <TabsContent value="stats" className="mt-0">
-          <section className="glass-panel rounded-3xl p-6 shadow-glass animate-fade-in-up text-center">
-            <h3 className="text-lg font-semibold">
-              لوحة الإحصاءات قادمة قريباً
-            </h3>
-            <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-              سنقدم رسوماً بيانية صغيرة، مخططات حرارية، ومؤشرات تساعدك على تقييم
-              التقدّم عبر أقسام المشروع. تابعنا أثناء بناء هذه اللوحة.
-            </p>
-            <Button
-              className="mt-4 rounded-full bg-primary px-6 text-primary-foreground shadow-glow-soft"
-              disabled
-            >
-              قيد التطوير
-            </Button>
-          </section>
+          <ProjectStats project={project} metrics={metrics} />
         </TabsContent>
       </Tabs>
       <SectionCreateSheet

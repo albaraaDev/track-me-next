@@ -106,6 +106,15 @@ export const filterStateSchema = z.object({
       to: z.string().nullable().optional(),
     })
     .optional(),
+  projectIds: z.array(z.string()).default([]),
+  sectionIds: z
+    .array(
+      z.object({
+        projectId: z.string(),
+        sectionId: z.string(),
+      }),
+    )
+    .default([]),
 });
 export type FilterState = z.infer<typeof filterStateSchema>;
 
@@ -142,6 +151,8 @@ export function createInitialAppData(): AppData {
       searchTerm: "",
       timeframe: "month",
       includeOpenEnded: true,
+      projectIds: [],
+      sectionIds: [],
     },
     onboardingCompleted: false,
     lastBackupAt: null,
