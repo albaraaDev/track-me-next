@@ -2,18 +2,8 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import {
-  ArrowRight,
-  CalendarDays,
-  Table2,
-  ChartBar,
-  Check,
-  X,
-  Minus,
-} from 'lucide-react';
+import { ArrowRight, CalendarDays, Table2, User2 } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
-import { MainHeader } from '@/components/layout/main-header';
-import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
 import { ar } from 'date-fns/locale';
 import { TrackerPreview } from '@/components/trackers/tracker-preview';
@@ -25,24 +15,6 @@ import { formatAppDate } from '@/lib/date';
 type SectionPageProps = {
   params: { projectId: string; sectionId: string };
 };
-
-const sectionHighlights = [
-  {
-    title: 'ترويسة القسم',
-    description:
-      'نوضح اسم القسم، وصفه، تاريخه، وعدد الجداول الحالية مع خيارات سريعة للتحرير أو الحذف.',
-  },
-  {
-    title: 'الجداول الزجاجية',
-    description:
-      'كل جدول يظهر في Accordion أنيق، يمكن طيّه أو فتحه بلمسة واحدة مع حركة سلسة.',
-  },
-  {
-    title: 'التفاعل السريع',
-    description:
-      'النقر المزدوج على الخلايا للتبديل بين الحالات أو تحرير الملاحظات، والضغط المطوّل لعرض التفاصيل.',
-  },
-];
 
 export default function SectionPage({ params }: SectionPageProps) {
   const project = useAppStore(
@@ -57,12 +29,32 @@ export default function SectionPage({ params }: SectionPageProps) {
   const trackerCount = section?.trackers.length ?? 0;
   const [isTrackerSheetOpen, setIsTrackerSheetOpen] = React.useState(false);
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+  const [isClient, setIsClient] = React.useState(false);
+  const hasHydrated = useAppStore((state) => state.hasHydrated);
 
   const formatDate = React.useCallback(
     (date: string | null | undefined) =>
       formatAppDate(date, 'd MMMM yyyy', { locale: ar }),
     []
   );
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient || !hasHydrated) {
+    return (
+      <AppShell
+        header={
+          <div className="flex flex-col gap-4">
+            <div className="glass-panel h-40 rounded-3xl animate-pulse" />
+          </div>
+        }
+      >
+        <section className="glass-panel h-64 rounded-3xl animate-pulse" />
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell
@@ -101,6 +93,16 @@ export default function SectionPage({ params }: SectionPageProps) {
                       : 'أضف وصفاً للقسم لتتذكر هدفه ودوره داخل المشروع.'}
                   </p>
                 </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="glass-panel-muted size-10 rounded-3xl border border-border/60 text-muted-foreground hover:text-foreground"
+                  aria-label="تعديل الهوية الشخصية"
+                  onClick={() => setIsProfileOpen(true)}
+                >
+                  <User2 className="size-5" />
+                </Button>
               </div>
 
               <div className="grid gap-3 text-xs text-muted-foreground grid-cols-2">

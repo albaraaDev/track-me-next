@@ -1,6 +1,14 @@
 'use client';
 
-import { CalendarRange, BarChart3, Flame } from 'lucide-react';
+import {
+  CalendarRange,
+  BarChart3,
+  Flame,
+  Sparkles,
+  TrendingUp,
+  CalendarCheck,
+  AlertTriangle,
+} from 'lucide-react';
 import { Project } from '@/domain/types';
 import { ProjectMetrics } from '@/lib/stats';
 import { formatAppDate } from '@/lib/date';
@@ -69,8 +77,6 @@ export function ProjectStats({ project, metrics }: ProjectStatsProps) {
       </div>
     );
   };
-  console.log(series);
-  
   return (
     <div className="space-y-6">
       <section className="glass-panel rounded-3xl border border-border/60 p-5 shadow-glow-soft">

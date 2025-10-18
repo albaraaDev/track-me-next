@@ -13,23 +13,11 @@ export function ThemeToggle({ className }: { className?: string }) {
     setMounted(true);
   }, []);
 
-  const isDark =
-    mounted && (theme === "system" ? resolvedTheme === "dark" : theme === "dark");
+  const isDark = theme === "system" ? resolvedTheme === "dark" : theme === "dark";
 
   const toggleTheme = React.useCallback(() => {
-    if (!mounted) return;
     setTheme(isDark ? "light" : "dark");
-  }, [isDark, mounted, setTheme]);
-
-  const icon = mounted ? (
-    isDark ? (
-      <Sun className="size-5" />
-    ) : (
-      <Moon className="size-5" />
-    )
-  ) : (
-    <Moon className="size-5 opacity-0" aria-hidden />
-  );
+  }, [isDark, setTheme]);
 
   return (
     <button
@@ -41,9 +29,10 @@ export function ThemeToggle({ className }: { className?: string }) {
         className,
       )}
       aria-label="تبديل النمط اللوني"
-      disabled={!mounted}
     >
-      {icon}
+      {mounted ? (isDark ? <Sun className="size-5" /> : <Moon className="size-5" />) : (
+        <Moon className="size-5" />
+      )}
     </button>
   );
 }
