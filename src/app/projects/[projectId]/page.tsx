@@ -3,7 +3,14 @@
 import * as React from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { ArrowRight, CalendarDays, Layers, Table2, User2 } from 'lucide-react';
+import {
+  ArrowRight,
+  CalendarDays,
+  Filter,
+  Layers,
+  Table2,
+  User2,
+} from 'lucide-react';
 import { ar } from 'date-fns/locale';
 import { AppShell } from '@/components/layout/app-shell';
 import { SectionList } from '@/components/sections/section-list';
@@ -16,15 +23,28 @@ import { ProjectOverview } from '@/components/projects/project-overview';
 import { computeProjectMetrics } from '@/lib/stats';
 import { ProjectFilters } from '@/components/projects/project-filters';
 import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 
 const ProjectStats = dynamic(
-  () => import('@/components/projects/project-stats').then((mod) => mod.ProjectStats),
+  () =>
+    import('@/components/projects/project-stats').then(
+      (mod) => mod.ProjectStats
+    ),
   {
     ssr: false,
     loading: () => (
-      <section className="glass-panel h-64 rounded-3xl animate-pulse" aria-hidden="true" />
+      <section
+        className="glass-panel h-64 rounded-3xl animate-pulse"
+        aria-hidden="true"
+      />
     ),
-  },
+  }
 );
 
 type ProjectPageProps = {
@@ -58,6 +78,11 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   );
   const handleCreateSection = React.useCallback(() => {
     setIsSectionSheetOpen(true);
+  }, []);
+
+  const [isFiltersOpen, setIsFiltersOpen] = React.useState(false);
+  const openFilters = React.useCallback(() => {
+    setIsFiltersOpen(true);
   }, []);
 
   React.useEffect(() => {
@@ -96,17 +121,28 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     <h1 className="text-xl font-bold">
                       {project?.name ?? 'مشروع غير معروف'}
                     </h1>
-                    <div className="flex items-center gap-2 rounded-2xl bg-primary/5 p-3 text-xs text-primary shrink-0">
-                      <Table2 className="size-4" />
-                      {trackerCount > 0
-                        ? `${
-                            trackerCount === 1
-                              ? 'جدول متابعة واحد'
-                              : trackerCount === 2
-                              ? 'جدولا متابعة'
-                              : trackerCount + ' جداول متابعة'
-                          } `
-                        : 'لا توجد جداول بعد'}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 rounded-2xl bg-primary/5 p-3 text-xs text-primary shrink-0">
+                        <Table2 className="size-4" />
+                        {trackerCount > 0
+                          ? `${
+                              trackerCount === 1
+                                ? 'جدول متابعة واحد'
+                                : trackerCount === 2
+                                ? 'جدولا متابعة'
+                                : trackerCount + ' جداول متابعة'
+                            } `
+                          : 'لا توجد جداول بعد'}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-full border border-border/60 text-xs text-muted-foreground hover:text-foreground grid place-content-center p-0 size-10"
+                        onClick={openFilters}
+                      >
+                        <Filter className="size-4" />
+                      </Button>
                     </div>
                   </div>
                   <p className="text-sm shrink text-muted-foreground">
@@ -184,7 +220,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         </TabsList>
 
         <TabsContent value="overview" className="mt-0 space-y-4">
-          <ProjectFilters projectId={project?.id ?? params.projectId} />
           <ProjectOverview project={project} metrics={metrics} />
         </TabsContent>
 
@@ -197,7 +232,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         </TabsContent>
 
         <TabsContent value="stats" className="mt-0 space-y-4">
-          <ProjectFilters projectId={project?.id ?? params.projectId} />
           <ProjectStats project={project} metrics={metrics} />
         </TabsContent>
       </Tabs>
@@ -207,6 +241,14 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         onOpenChange={setIsSectionSheetOpen}
       />
       <ProfileSheet open={isProfileOpen} onOpenChange={setIsProfileOpen} />
+      <Sheet open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+        <SheetContent
+          side="bottom"
+          className="glass-panel max-h-[80vh] overflow-y-auto rounded-t-[2.5rem] border border-border p-6 shadow-glow-soft"
+        >
+          <ProjectFilters projectId={project?.id ?? params.projectId} />
+        </SheetContent>
+      </Sheet>
     </AppShell>
   );
 }

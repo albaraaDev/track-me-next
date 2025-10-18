@@ -1,6 +1,14 @@
 'use client';
 
-import { CalendarRange, BarChart3, Flame } from 'lucide-react';
+import {
+  CalendarRange,
+  BarChart3,
+  Flame,
+  Sparkles,
+  TrendingUp,
+  CalendarCheck,
+  AlertTriangle,
+} from 'lucide-react';
 import { Project } from '@/domain/types';
 import { ProjectMetrics } from '@/lib/stats';
 import { formatAppDate } from '@/lib/date';

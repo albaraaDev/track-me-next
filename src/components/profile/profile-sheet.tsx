@@ -24,17 +24,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { useAppActions, useAppStore } from "@/store/app-store";
 import { cn } from "@/lib/utils";
+import { avatarOptions, getAvatarById } from "@/lib/avatars";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-
-const avatarPalette = [
-  { id: "avatar-01", icon: "🌟", color: "#38bdf8" },
-  { id: "avatar-02", icon: "🔥", color: "#f97316" },
-  { id: "avatar-03", icon: "🌿", color: "#34d399" },
-  { id: "avatar-04", icon: "🎧", color: "#a855f7" },
-  { id: "avatar-05", icon: "🚀", color: "#f59e0b" },
-  { id: "avatar-06", icon: "📚", color: "#6366f1" },
-];
 
 const profileSchema = z.object({
   displayName: z.string().min(2, "الاسم يجب أن يكون حرفين على الأقل"),
@@ -74,7 +66,7 @@ export function ProfileSheet({ open, onOpenChange }: ProfileSheetProps) {
     });
   }, [profile, form, open]);
 
-  const selectedAvatar = avatarPalette.find((avatar) => avatar.id === form.watch("avatarId"));
+  const selectedAvatar = getAvatarById(form.watch("avatarId"));
 
   const handleSubmit = form.handleSubmit((values) => {
     setProfile({
@@ -123,7 +115,7 @@ export function ProfileSheet({ open, onOpenChange }: ProfileSheetProps) {
               <div className="space-y-3">
                 <Label className="text-sm font-medium text-foreground">الأفتار</Label>
                 <div className="grid grid-cols-3 gap-3">
-                  {avatarPalette.map((avatar) => {
+                  {avatarOptions.map((avatar) => {
                     const selected = avatar.id === form.watch("avatarId");
                     return (
                       <button

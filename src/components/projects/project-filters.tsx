@@ -75,8 +75,8 @@ export function ProjectFilters({ projectId }: ProjectFiltersProps) {
   if (!project) return null;
 
   return (
-    <section className="glass-panel rounded-3xl border border-border/60 p-5 shadow-glass space-y-6 text-sm">
-      <header className="flex flex-wrap items-start justify-between gap-4">
+    <section className="space-y-6 text-sm">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex items-center gap-3 text-foreground">
           <span className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-glow-soft">
             <Filter className="size-5" />
@@ -87,12 +87,12 @@ export function ProjectFilters({ projectId }: ProjectFiltersProps) {
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-muted-foreground">
-          <span className="rounded-full bg-accent px-3 py-1 text-accent-foreground">
+          {/* <span className="rounded-full bg-accent px-3 py-1 text-accent-foreground">
             النطاق: {timeframeLabel}
           </span>
           <span className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground">
             {selectionSummary}
-          </span>
+          </span> */}
           {hasActiveFilters ? (
             <Button
               type="button"

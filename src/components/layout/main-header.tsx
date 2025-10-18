@@ -5,6 +5,7 @@ import { UploadCloud, DownloadCloud, User2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/store/app-store";
+import { getAvatarById } from "@/lib/avatars";
 
 const morningGreetings = ["صباح النشاط!", "صباح العزيمة!", "صباح مليء بالإنجاز!"];
 const afternoonGreetings = ["نهار مشرق!", "استمر، أنت تقترب!", "نهار العمل مستمر!"];
@@ -39,6 +40,8 @@ export function MainHeader({
     .slice(0, 2)
     .map((part) => part.charAt(0))
     .join("");
+  const avatar = getAvatarById(profile.avatarId);
+  const avatarGlyph = avatar?.icon ?? initials;
 
   return (
     <header className="glass-panel rounded-3xl p-4 shadow-glass sm:p-6">
@@ -53,8 +56,12 @@ export function MainHeader({
             }}
             aria-label="تعديل الهوية الشخصية"
           >
-            <span className="flex size-full items-center justify-center rounded-2xl bg-white/10 backdrop-blur group-hover:bg-white/20 transition">
-              {initials || <User2 className="size-6" />}
+            <span className="flex size-full items-center justify-center rounded-2xl bg-white/10 backdrop-blur group-hover:bg-white/20 transition text-2xl">
+              {avatarGlyph ? (
+                <span aria-hidden>{avatarGlyph}</span>
+              ) : (
+                <User2 className="size-6" />
+              )}
             </span>
           </button>
           <div className="space-y-1">
