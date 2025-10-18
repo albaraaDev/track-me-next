@@ -10,7 +10,7 @@ const morningGreetings = ["صباح النشاط!", "صباح العزيمة!", 
 const afternoonGreetings = ["نهار مشرق!", "استمر، أنت تقترب!", "نهار العمل مستمر!"];
 const eveningGreetings = ["مساء الهدوء!", "راجع إنجازاتك اليوم!", "مساء مفعم بالراحة!"];
 
-function getGreeting(): string {
+function pickGreeting(): string {
   const hour = new Date().getHours();
   const list =
     hour < 12 ? morningGreetings : hour < 18 ? afternoonGreetings : eveningGreetings;
@@ -30,7 +30,10 @@ export function MainHeader({
   onRequestExport,
 }: MainHeaderProps) {
   const profile = useAppStore((state) => state.profile);
-  const greeting = React.useMemo(() => getGreeting(), []);
+  const [greeting, setGreeting] = React.useState("مرحباً بك!");
+  React.useEffect(() => {
+    setGreeting(pickGreeting());
+  }, []);
   const initials = profile.displayName
     .split(" ")
     .slice(0, 2)

@@ -111,7 +111,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
             </DropdownMenu>
           </header>
 
-          <dl className="grid gap-3 text-xs text-muted-foreground grid-cols-2 sm:grid-cols-3">
+          <dl className="grid gap-3 text-xs text-muted-foreground grid-cols-2 sm:grid-cols-4">
             <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
               <CalendarDays className="size-4 text-primary" />
               <div>
