@@ -4,6 +4,16 @@ import { CalendarRange, BarChart3, Flame } from 'lucide-react';
 import { Project } from '@/domain/types';
 import { ProjectMetrics } from '@/lib/stats';
 import { formatAppDate } from '@/lib/date';
+import {
+  BarChart,
+  Bar,
+  CartesianGrid,
+  Tooltip,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Legend,
+} from 'recharts';
 
 type ProjectStatsProps = {
   project: Project | undefined;
@@ -33,7 +43,34 @@ export function ProjectStats({ project, metrics }: ProjectStatsProps) {
   const hasStatusData = status.total > 0;
   const series = status.dailySeries;
   const sliceFactor = Math.ceil(series.length / MAX_SERIES_LABELS) || 1;
+  const chartData = series.map((point) => ({
+    date: formatAppDate(point.date, 'd MMM'),
+    done: point.done,
+    partial: point.partial,
+    missed: point.missed,
+    total: point.done + point.partial + point.missed,
+  }));
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    const items = payload.filter((entry: any) => entry.value > 0);
+    if (!items.length) return null;
+    return (
+      <div className="rounded-2xl border border-border/60 bg-background/95 px-3 py-2 text-xs shadow-glow-soft">
+        <p className="font-semibold text-foreground">{label}</p>
+        <ul className="mt-1 space-y-1 text-muted-foreground">
+          {items.map((entry: any) => (
+            <li key={entry.dataKey} className="flex items-center justify-between gap-2">
+              <span>{entry.name}</span>
+              <span className="text-foreground font-medium">{entry.value}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+  console.log(series);
+  
   return (
     <div className="space-y-6">
       <section className="glass-panel rounded-3xl border border-border/60 p-5 shadow-glow-soft">
@@ -67,52 +104,35 @@ export function ProjectStats({ project, metrics }: ProjectStatsProps) {
           <h3 className="text-sm font-semibold text-foreground">النشاط اليومي</h3>
           <CalendarRange className="size-5 text-primary" />
         </header>
-        {hasStatusData && series.length ? (
-          <div className="mt-6">
-            <div className="flex h-48 items-end gap-2 overflow-x-auto">
-              {series.map((point, index) => {
-                const total = point.done + point.partial + point.missed;
-                const doneHeight = total ? (point.done / total) * 100 : 0;
-                const partialHeight = total ? (point.partial / total) * 100 : 0;
-                const missedHeight = total ? (point.missed / total) * 100 : 0;
-                const showLabel = index % sliceFactor === 0 || index === series.length - 1;
-
-                return (
-                  <div key={point.date} className="flex flex-col items-center gap-2 text-[10px] text-muted-foreground">
-                    <div className="flex h-40 w-6 flex-col justify-end overflow-hidden rounded-full bg-muted">
-                      <span
-                        className="block w-full bg-status-missed/40"
-                        style={{ height: `${missedHeight}%` }}
-                      />
-                      <span
-                        className="block w-full bg-status-partial/50"
-                        style={{ height: `${partialHeight}%` }}
-                      />
-                      <span
-                        className="block w-full bg-status-done/60"
-                        style={{ height: `${doneHeight}%` }}
-                      />
-                    </div>
-                    {showLabel ? (
-                      <span className="whitespace-nowrap">
-                        {formatAppDate(point.date, 'd MMM')}
-                      </span>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-2 rounded-full bg-status-done/60" /> تم
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-2 rounded-full bg-status-partial/50" /> جزئي
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-2 rounded-full bg-status-missed/40" /> لم يتم
-              </span>
-            </div>
+        {hasStatusData && chartData.length ? (
+          <div className="mt-6 h-72 w-full">
+            <ResponsiveContainer>
+              <BarChart data={chartData} barGap={4}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" />
+                <XAxis
+                  dataKey="date"
+                  interval={sliceFactor - 1}
+                  tick={{ fill: 'var(--foreground)', fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fill: 'var(--foreground)', fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip content={<CustomTooltip />} cursor={{ opacity: 0.15 }} />
+                <Legend
+                  verticalAlign="top"
+                  align="right"
+                  wrapperStyle={{ fontSize: 11, color: 'var(--muted-foreground)' }}
+                />
+                <Bar dataKey="done" name="تم" stackId="status" fill="hsl(var(--status-done) / 0.85)" />
+                <Bar dataKey="partial" name="جزئي" stackId="status" fill="hsl(var(--status-partial) / 0.75)" />
+                <Bar dataKey="missed" name="لم يتم" stackId="status" fill="hsl(var(--status-missed) / 0.6)" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         ) : (
           <p className="mt-4 text-xs text-muted-foreground">
