@@ -3,7 +3,17 @@
 import * as React from 'react';
 import { addDays, format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { CalendarDays, Check, NotebookPen, Table2, X } from 'lucide-react';
+import {
+  CalendarDays,
+  Check,
+  Edit,
+  Minus,
+  NotebookPen,
+  Table2,
+  Trash,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { Tracker } from '@/domain/types';
 import {
   Accordion,
@@ -15,6 +25,9 @@ import { cn } from '@/lib/utils';
 import { useAppActions } from '@/store/app-store';
 import { Button } from '@/components/ui/button';
 import { formatAppDate, parseAppDate, toAppDateString } from '@/lib/date';
+import { useToast } from '@/hooks/use-toast';
+import { TrackerEditSheet } from './tracker-edit-sheet';
+import { TrackerDeleteDialog } from './tracker-delete-dialog';
 import {
   Sheet,
   SheetContent,
@@ -54,6 +67,35 @@ export function TrackerPreview({
   projectId,
   sectionId,
 }: TrackerPreviewProps) {
+  const { toast } = useToast();
+  const { removeTracker } = useAppActions();
+  const [editTrackerId, setEditTrackerId] = React.useState<string | null>(null);
+  const [deleteTrackerId, setDeleteTrackerId] = React.useState<string | null>(
+    null
+  );
+
+  const trackerMap = React.useMemo(() => {
+    const map = new Map<string, Tracker>();
+    trackers.forEach((tracker) => {
+      map.set(tracker.id, tracker);
+    });
+    return map;
+  }, [trackers]);
+
+  const handleConfirmDelete = React.useCallback(() => {
+    if (!deleteTrackerId) return;
+    const tracker = trackerMap.get(deleteTrackerId);
+    removeTracker(projectId, sectionId, deleteTrackerId);
+    toast({
+      title: 'تم حذف الجدول',
+      description: tracker
+        ? `حُذف الجدول "${tracker.title}" بنجاح.`
+        : 'تم حذف جدول المتابعة بنجاح.',
+      variant: 'destructive',
+    });
+    setDeleteTrackerId(null);
+  }, [deleteTrackerId, trackerMap, removeTracker, projectId, sectionId, toast]);
+
   if (!trackers.length) {
     return (
       <div className="glass-panel rounded-3xl p-6 text-center shadow-glass">
@@ -70,58 +112,109 @@ export function TrackerPreview({
   }
 
   return (
-    <Accordion
-      type="single"
-      collapsible
-      className="glass-panel rounded-3xl p-4 shadow-glass space-y-3"
-      dir="rtl"
-    >
-      {trackers.map((tracker) => (
-        <AccordionItem
-          key={tracker.id}
-          value={tracker.id}
-          className="rounded-2xl border border-border/50 bg-white/5 px-4 backdrop-blur"
-        >
-          <AccordionTrigger className="flex items-center justify-between gap-3 py-3 text-right text-sm font-medium text-foreground">
-            <div className="flex flex-col items-start gap-1">
-              <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-                <span className="text-xl">
-                  {tracker.icon || (tracker.type === 'status' ? '📊' : '📝')}
-                </span>
-                {tracker.title}
-              </span>
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <span>
-                  {formatDate(tracker.startDate)}
-                </span>
-                ⇠
-                <span>
-                  {tracker.endDate
-                    ? formatDate(tracker.endDate)
-                    : 'متابعة مفتوحة'}
-                </span>
-              </span>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="space-y-4">
-            <TrackerMeta tracker={tracker} />
-            {tracker.type === 'status' ? (
-              <StatusTrackerPreview
-                tracker={tracker}
-                projectId={projectId}
-                sectionId={sectionId}
-              />
-            ) : (
-              <NotesTrackerPreview
-                tracker={tracker}
-                projectId={projectId}
-                sectionId={sectionId}
-              />
-            )}
-          </AccordionContent>
-        </AccordionItem>
-      ))}
-    </Accordion>
+    <>
+      <Accordion
+        type="single"
+        collapsible
+        className="glass-panel rounded-3xl p-4 shadow-glass space-y-3"
+        dir="rtl"
+      >
+        {trackers.map((tracker) => (
+          <AccordionItem
+            key={tracker.id}
+            value={tracker.id}
+            className="rounded-2xl border border-border/50 bg-white/5 px-4 backdrop-blur"
+          >
+            <AccordionTrigger className="flex items-center justify-between gap-3 py-3 text-right text-sm font-medium text-foreground">
+              <div className="flex justify-between items-center flex-1">
+                <div className="flex flex-col items-start gap-1">
+                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <span className="text-xl">
+                      {tracker.icon ||
+                        (tracker.type === 'status' ? '📊' : '📝')}
+                    </span>
+                    {tracker.title}
+                  </span>
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <span>{formatDate(tracker.startDate)}</span>⇠
+                    <span>
+                      {tracker.endDate
+                        ? formatDate(tracker.endDate)
+                        : 'متابعة مفتوحة'}
+                    </span>
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center justify-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-full text-green-500 hover:bg-green-500/10 px-2"
+                    onClick={() => setEditTrackerId(tracker.id)}
+                  >
+                    <Edit />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-full text-destructive hover:bg-destructive/10 px-2"
+                    onClick={() => setDeleteTrackerId(tracker.id)}
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4">
+              <TrackerMeta tracker={tracker} />
+              {tracker.type === 'status' ? (
+                <StatusTrackerPreview
+                  tracker={tracker as StatusTracker}
+                  projectId={projectId}
+                  sectionId={sectionId}
+                />
+              ) : (
+                <NotesTrackerPreview
+                  tracker={tracker as NotesTracker}
+                  projectId={projectId}
+                  sectionId={sectionId}
+                />
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+
+      {editTrackerId ? (
+        <TrackerEditSheet
+          projectId={projectId}
+          sectionId={sectionId}
+          trackerId={editTrackerId}
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditTrackerId(null);
+            }
+          }}
+        />
+      ) : null}
+
+      <TrackerDeleteDialog
+        trackerName={
+          deleteTrackerId
+            ? trackerMap.get(deleteTrackerId)?.title ?? 'هذا الجدول'
+            : 'هذا الجدول'
+        }
+        open={deleteTrackerId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTrackerId(null);
+          }
+        }}
+        onConfirm={handleConfirmDelete}
+      />
+    </>
   );
 }
 
@@ -419,8 +512,10 @@ function StatusGrid({
                             ) : statusLabel(cell.status) === 'لم يتم' ? (
                               <X />
                             ) : statusLabel(cell.status) === 'جزئي' ? (
-                              <NotebookPen />
-                            ) : "×"}
+                              <Minus />
+                            ) : (
+                              '×'
+                            )}
                           </span>
                         )}
                         {!cell && isActive && (
@@ -514,24 +609,14 @@ function NotesGrid({
         return current;
       });
     },
-    [
-      editing,
-      tracker.cells,
-      updateTracker,
-      projectId,
-      sectionId,
-      tracker.id,
-    ]
+    [editing, tracker.cells, updateTracker, projectId, sectionId, tracker.id]
   );
 
-  const handleCloseSheet = React.useCallback(
-    (open: boolean) => {
-      if (!open) {
-        setEditing(null);
-      }
-    },
-    []
-  );
+  const handleCloseSheet = React.useCallback((open: boolean) => {
+    if (!open) {
+      setEditing(null);
+    }
+  }, []);
 
   if (!tracker.items.length) {
     return (
@@ -615,7 +700,10 @@ function NotesGrid({
         </table>
       </div>
 
-      <Dialog open={!!preview} onOpenChange={(open) => !open && setPreview(null)}>
+      <Dialog
+        open={!!preview}
+        onOpenChange={(open) => !open && setPreview(null)}
+      >
         <DialogContent className="glass-panel max-w-md rounded-3xl border border-border/60 text-right shadow-glow-soft">
           <DialogHeader className="text-right">
             <DialogTitle>تفاصيل الملاحظة</DialogTitle>

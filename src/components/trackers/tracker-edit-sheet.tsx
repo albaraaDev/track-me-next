@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { z } from 'zod';
 import { addDays, addMonths } from 'date-fns';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,98 +23,102 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAppActions } from '@/store/app-store';
+import { useAppActions, useAppStore } from '@/store/app-store';
 import {
-  CadencePreset,
-  Tracker,
-  cadencePresetSchema,
-  trackerStatusSchema,
   trackerNotesSchema,
+  trackerStatusSchema,
 } from '@/domain/types';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import {
+  createId,
+  trackerFormSchema,
+  TrackerFormValues,
+  weekdayLabels,
+} from './tracker-create-sheet';
 import { parseAppDate, toAppDateString } from '@/lib/date';
 
-export const weekdayLabels = [
-  'أحد',
-  'إثنين',
-  'ثلاثاء',
-  'أربعاء',
-  'خميس',
-  'جمعة',
-  'سبت',
-];
-
-export const trackerFormSchema = z.object({
-  type: z.enum(['status', 'notes']),
-  title: z.string().trim().min(2, 'العنوان مطلوب'),
-  description: z
-    .string()
-    .trim()
-    .max(280, 'الوصف يجب ألا يتجاوز 280 حرفاً')
-    .optional()
-    .or(z.literal('')),
-  icon: z
-    .string()
-    .trim()
-    .max(4, 'استخدم رمزاً قصيراً أو إيموجي بحد أقصى 4 محارف')
-    .optional()
-    .or(z.literal('')),
-  startDate: z.string().min(1, 'اختر تاريخ البداية'),
-  endDate: z.string().optional().or(z.literal('')),
-  cadence: cadencePresetSchema,
-  activeWeekdays: z
-    .array(z.number().min(0).max(6))
-    .min(1, 'اختر يوماً واحداً على الأقل'),
-  items: z
-    .array(
-      z.object({
-        id: z.string(),
-        label: z.string().trim().min(1, 'اسم العنصر مطلوب'),
-      })
-    )
-    .min(1, 'أضف عنصراً واحداً على الأقل'),
-});
-
-export type TrackerFormValues = z.infer<typeof trackerFormSchema>;
-
-export const createId = () =>
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `id-${Date.now()}`;
-
-type TrackerCreateSheetProps = {
+type TrackerEditSheetProps = {
   projectId: string;
   sectionId: string;
+  trackerId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-export function TrackerCreateSheet({
+const DEFAULT_STATUS_ICON = '📊';
+const DEFAULT_NOTES_ICON = '📝';
+
+export function TrackerEditSheet({
   projectId,
   sectionId,
+  trackerId,
   open,
   onOpenChange,
-}: TrackerCreateSheetProps) {
-  const { addTracker } = useAppActions();
+}: TrackerEditSheetProps) {
+  const { updateTracker } = useAppActions();
+  const { toast } = useToast();
+  const tracker = useAppStore(
+    React.useCallback(
+      (state) =>
+        state.projects
+          .find((project) => project.id === projectId)
+          ?.sections.find((section) => section.id === sectionId)
+          ?.trackers.find((item) => item.id === trackerId),
+      [projectId, sectionId, trackerId]
+    )
+  );
+
+  React.useEffect(() => {
+    if (open && !tracker) {
+      onOpenChange(false);
+    }
+  }, [tracker, open, onOpenChange]);
 
   const form = useForm<TrackerFormValues>({
     resolver: zodResolver(trackerFormSchema),
     defaultValues: {
-      type: 'status',
-      title: '',
-      description: '',
-      icon: '📊',
-      startDate: toAppDateString(new Date()),
-      endDate: '',
-      cadence: 'week',
-      activeWeekdays: [0, 2, 4],
-      items: [{ id: createId(), label: 'عنصر جديد' }],
+      type: tracker?.type ?? 'status',
+      title: tracker?.title ?? '',
+      description: tracker?.description ?? '',
+      icon:
+        tracker?.icon ??
+        (tracker?.type === 'notes' ? DEFAULT_NOTES_ICON : DEFAULT_STATUS_ICON),
+      startDate: tracker?.startDate
+        ? tracker.startDate
+        : toAppDateString(new Date()),
+      endDate: tracker?.endDate ?? '',
+      cadence: tracker?.cadence ?? 'week',
+      activeWeekdays: tracker?.activeWeekdays ?? [0, 2, 4],
+      items:
+        tracker?.items.map((item) => ({
+          id: item.id,
+          label: item.label,
+        })) ?? [{ id: createId(), label: 'عنصر جديد' }],
     },
   });
 
-  const type = form.watch('type');
+  React.useEffect(() => {
+    if (!tracker) return;
+    form.reset({
+      type: tracker.type,
+      title: tracker.title,
+      description: tracker.description ?? '',
+      icon:
+        tracker.icon ??
+        (tracker.type === 'notes' ? DEFAULT_NOTES_ICON : DEFAULT_STATUS_ICON),
+      startDate: tracker.startDate,
+      endDate: tracker.endDate ?? '',
+      cadence: tracker.cadence,
+      activeWeekdays: tracker.activeWeekdays,
+      items: tracker.items.map((item) => ({
+        id: item.id,
+        label: item.label,
+      })),
+    });
+  }, [tracker, form, open]);
+
   const startDate = form.watch('startDate');
   const cadence = form.watch('cadence');
 
@@ -134,50 +137,6 @@ export function TrackerCreateSheet({
     }
     form.setValue('endDate', toAppDateString(end), { shouldDirty: true });
   }, [cadence, startDate, form]);
-
-  const handleSubmit = form.handleSubmit((values) => {
-    const baseTracker = {
-      id: createId(),
-      title: values.title.trim(),
-      description: values.description?.trim() || '',
-      icon: values.icon?.trim() || (values.type === 'status' ? '📊' : '📝'),
-      startDate: values.startDate,
-      endDate: values.endDate ? values.endDate : null,
-      cadence: values.cadence,
-      activeWeekdays: values.activeWeekdays,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    if (values.type === 'status') {
-      const tracker = trackerStatusSchema.parse({
-        ...baseTracker,
-        type: 'status',
-        items: values.items.map((item) => ({
-          id: item.id || createId(),
-          label: item.label.trim(),
-          createdAt: new Date().toISOString(),
-        })),
-        cells: {},
-      }) as Tracker;
-      addTracker(projectId, sectionId, tracker);
-    } else {
-      const tracker = trackerNotesSchema.parse({
-        ...baseTracker,
-        type: 'notes',
-        items: values.items.map((item) => ({
-          id: item.id || createId(),
-          label: item.label.trim(),
-          createdAt: new Date().toISOString(),
-        })),
-        cells: {},
-      }) as Tracker;
-      addTracker(projectId, sectionId, tracker);
-    }
-
-    onOpenChange(false);
-    form.reset();
-  });
 
   const updateItemLabel = React.useCallback(
     (id: string, label: string) => {
@@ -224,6 +183,66 @@ export function TrackerCreateSheet({
     [form]
   );
 
+  const handleSubmit = form.handleSubmit((values) => {
+    if (!tracker) return;
+    const timestamp = new Date().toISOString();
+    const baseUpdate = {
+      title: values.title.trim(),
+      description: values.description?.trim() || '',
+      icon:
+        values.icon?.trim() ||
+        (tracker.type === 'notes' ? DEFAULT_NOTES_ICON : DEFAULT_STATUS_ICON),
+      startDate: values.startDate,
+      endDate: values.endDate ? values.endDate : null,
+      cadence: values.cadence,
+      activeWeekdays: values.activeWeekdays,
+    };
+
+    const nextItems = values.items.map((item) => {
+      const existing = tracker.items.find((entry) => entry.id === item.id);
+      return {
+        id: item.id || createId(),
+        label: item.label.trim(),
+        createdAt: existing?.createdAt ?? timestamp,
+      };
+    });
+
+    if (tracker.type === 'status') {
+      const nextCells: Record<string, typeof tracker.cells[string]> = {};
+      nextItems.forEach((item) => {
+        const existing = tracker.cells[item.id];
+        if (existing) {
+          nextCells[item.id] = existing;
+        }
+      });
+      updateTracker(projectId, sectionId, tracker.id, {
+        ...baseUpdate,
+        items: nextItems,
+        cells: nextCells,
+      });
+    } else {
+      const nextCells: Record<string, typeof tracker.cells[string]> = {};
+      nextItems.forEach((item) => {
+        const existing = tracker.cells[item.id];
+        if (existing) {
+          nextCells[item.id] = existing;
+        }
+      });
+      updateTracker(projectId, sectionId, tracker.id, {
+        ...baseUpdate,
+        items: nextItems,
+        cells: nextCells,
+      });
+    }
+
+    toast({
+      title: 'تم تحديث الجدول',
+      description: 'حُفظت التعديلات على جدول المتابعة بنجاح.',
+    });
+
+    onOpenChange(false);
+  });
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -231,41 +250,23 @@ export function TrackerCreateSheet({
         className="glass-panel max-h-[82vh] overflow-y-auto rounded-t-[2rem] border border-border shadow-glow-soft sm:max-h-[75vh]"
       >
         <SheetHeader className="text-right">
-          <SheetTitle>إنشاء جدول متابعة</SheetTitle>
+          <SheetTitle>تعديل جدول المتابعة</SheetTitle>
           <SheetDescription>
-            اختر نوع الجدول، عناصر المتابعة، ومدى الأيام الفاعلة. يمكنك تعديل كل
-            التفاصيل بعد الإنشاء.
+            حدّث تفاصيل الجدول، غيّر الأيقونة أو الأيام الفاعلة، وأعد تنظيم العناصر كما تشاء.
           </SheetDescription>
         </SheetHeader>
 
         <div className="mt-6">
           <Form {...form}>
             <form onSubmit={handleSubmit} className="space-y-5">
-              <Tabs
-                value={type}
-                onValueChange={(value) =>
-                  form.setValue('type', value as TrackerFormValues['type'])
-                }
-                className="flex flex-col gap-6"
-                dir="rtl"
-              >
-                <TabsList className="glass-panel-muted flex w-full justify-evenly rounded-3xl border border-border/60 text-sm">
-                  <TabsTrigger
-                    value="status"
-                    className="w-full rounded-3xl px-3 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                  >
-                    متابعة بالحالات
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="notes"
-                    className="w-full rounded-3xl px-3 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                  >
-                    متابعة بالملاحظات
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="status" className='hidden' />
-                <TabsContent value="notes"  className='hidden'/>
-              </Tabs>
+              <div className="rounded-3xl border border-border/60 bg-white/5 p-4 text-sm text-muted-foreground">
+                نوع الجدول:{' '}
+                <span className="text-foreground font-semibold">
+                  {tracker?.type === 'notes'
+                    ? 'متابعة بالملاحظات'
+                    : 'متابعة بالحالات'}
+                </span>
+              </div>
 
               <FormField
                 control={form.control}
@@ -310,7 +311,11 @@ export function TrackerCreateSheet({
                     <FormLabel>الأيقونة</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="إيموجي أو رمز قصير مثل 📊"
+                        placeholder={`إيموجي أو رمز قصير مثل ${
+                          tracker?.type === 'notes'
+                            ? DEFAULT_NOTES_ICON
+                            : DEFAULT_STATUS_ICON
+                        }`}
                         {...field}
                       />
                     </FormControl>
@@ -378,7 +383,7 @@ export function TrackerCreateSheet({
                               : 'text-muted-foreground'
                           )}
                           onClick={() =>
-                            field.onChange(option.value as CadencePreset)
+                            field.onChange(option.value as TrackerFormValues['cadence'])
                           }
                         >
                           {option.label}
@@ -471,7 +476,7 @@ export function TrackerCreateSheet({
                   type="submit"
                   className="rounded-full bg-primary px-8 text-primary-foreground shadow-glow-soft"
                 >
-                  حفظ الجدول
+                  حفظ التعديلات
                 </Button>
               </SheetFooter>
             </form>
