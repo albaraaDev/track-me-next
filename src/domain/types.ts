@@ -105,7 +105,8 @@ export const filterStateSchema = z.object({
       from: z.string(),
       to: z.string().nullable().optional(),
     })
-    .optional(),
+    .optional()
+    .nullable(),
   projectIds: z.array(z.string()).default([]),
   sectionIds: z
     .array(
