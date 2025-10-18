@@ -249,6 +249,16 @@ type NoteCellState = {
   note: string | null;
 };
 
+type StatusNoteState = {
+  trackerId: string;
+  trackerTitle: string;
+  itemId: string;
+  itemLabel: string;
+  iso: string;
+  status: StatusTracker['cells'][string][string]['status'];
+  note: string | null;
+};
+
 function StatusTrackerPreview({
   tracker,
   projectId,
@@ -396,6 +406,17 @@ function StatusGrid({
   sectionId: string;
 }) {
   const { updateTracker } = useAppActions();
+  const [notePreview, setNotePreview] = React.useState<StatusNoteState | null>(null);
+  const [noteEditor, setNoteEditor] = React.useState<StatusNoteState | null>(null);
+  const [noteDraft, setNoteDraft] = React.useState('');
+
+  React.useEffect(() => {
+    if (noteEditor) {
+      setNoteDraft(noteEditor.note ?? '');
+    } else {
+      setNoteDraft('');
+    }
+  }, [noteEditor]);
 
   const handleToggle = React.useCallback(
     (
@@ -438,6 +459,97 @@ function StatusGrid({
     [projectId, sectionId, tracker.cells, tracker.id, updateTracker]
   );
 
+  const handleNoteRequest = React.useCallback(
+    (
+      itemId: string,
+      isoDate: string,
+      cell?: StatusTracker['cells'][string][string]
+    ) => {
+      if (!cell || cell.status === 'done') return;
+      const item = tracker.items.find((entry) => entry.id === itemId);
+      const payload: StatusNoteState = {
+        trackerId: tracker.id,
+        trackerTitle: tracker.title,
+        itemId,
+        itemLabel: item?.label ?? 'عنصر',
+        iso: isoDate,
+        status: cell.status,
+        note: cell.note ?? null,
+      };
+      if (cell.note && cell.note.trim().length) {
+        setNotePreview(payload);
+      } else {
+        setNoteEditor(payload);
+      }
+    },
+    [tracker]
+  );
+
+  const saveStatusNote = React.useCallback(
+    (value: string) => {
+      if (!noteEditor) return;
+      const trimmed = value.trim();
+      const nextCells = { ...(tracker.cells ?? {}) };
+      const itemCells = { ...(nextCells[noteEditor.itemId] ?? {}) };
+      const existing = itemCells[noteEditor.iso];
+      if (!existing) {
+        setNoteEditor(null);
+        setNoteDraft('');
+        return;
+      }
+      itemCells[noteEditor.iso] = {
+        ...existing,
+        status: existing.status ?? noteEditor.status,
+        note: trimmed ? trimmed : undefined,
+        updatedAt: new Date().toISOString(),
+      };
+      nextCells[noteEditor.itemId] = itemCells;
+      updateTracker(projectId, sectionId, tracker.id, {
+        cells: nextCells,
+      });
+      setNoteEditor(null);
+      setNoteDraft('');
+      setNotePreview((current) => {
+        if (
+          current &&
+          current.itemId === noteEditor.itemId &&
+          current.iso === noteEditor.iso
+        ) {
+          return { ...current, note: trimmed || null };
+        }
+        return current;
+      });
+    },
+    [noteEditor, tracker.cells, updateTracker, projectId, sectionId, tracker.id]
+  );
+
+  const handleDeleteNote = React.useCallback(() => {
+    if (!notePreview) return;
+    const nextCells = { ...(tracker.cells ?? {}) };
+    const itemCells = { ...(nextCells[notePreview.itemId] ?? {}) };
+    const existing = itemCells[notePreview.iso];
+    if (!existing) {
+      setNotePreview(null);
+      return;
+    }
+    itemCells[notePreview.iso] = {
+      ...existing,
+      note: undefined,
+      updatedAt: new Date().toISOString(),
+    };
+    nextCells[notePreview.itemId] = itemCells;
+    updateTracker(projectId, sectionId, tracker.id, {
+      cells: nextCells,
+    });
+    setNotePreview(null);
+  }, [notePreview, tracker.cells, updateTracker, projectId, sectionId, tracker.id]);
+
+  const handleCloseEditor = React.useCallback((open: boolean) => {
+    if (!open) {
+      setNoteEditor(null);
+    }
+  }, []);
+
   if (!tracker.items.length) {
     return (
       <div className="rounded-2xl border border-dashed border-border/50 p-4 text-center text-xs text-muted-foreground">
@@ -447,8 +559,9 @@ function StatusGrid({
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border/60">
-      <table className="min-w-full border-separate border-spacing-0 text-xs">
+    <>
+      <div className="overflow-x-auto rounded-2xl border border-border/60">
+        <table className="min-w-full border-separate border-spacing-0 text-xs">
         <thead>
           <tr>
             <th className="sticky right-0 z-10 bg-background px-4 py-3 text-center font-semibold text-foreground shadow-[2px_0_6px_rgba(15,23,42,0.08)] backdrop-blur">
@@ -489,54 +602,12 @@ function StatusGrid({
                       key={iso}
                       className="min-w-[95px] border-l border-border/40 p-0 text-center relative"
                     >
-                      <button
-                        type="button"
-                        disabled={!isActive}
-                        onClick={() => handleToggle(item.id, iso, cell)}
-                        className={cn(
-                          'absolute top-0 left-0 size-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary z-20',
-                          !isActive && 'bg-muted/30 text-muted-foreground/70',
-                          isActive && 'bg-white/5 hover:bg-white/10'
-                        )}
-                      >
-                        {cell && (
-                          <span
-                            className={cn(
-                              'absolute size-full left-0 top-0 grid place-content-center',
-                              statusColorMap[cell.status] ??
-                                'bg-white/10 text-foreground border-border/40'
-                            )}
-                          >
-                            {statusLabel(cell.status) === 'تم' ? (
-                              <Check />
-                            ) : statusLabel(cell.status) === 'لم يتم' ? (
-                              <X />
-                            ) : statusLabel(cell.status) === 'جزئي' ? (
-                              <Minus />
-                            ) : (
-                              '×'
-                            )}
-                          </span>
-                        )}
-                        {!cell && isActive && (
-                          <span
-                            className={cn(
-                              'absolute size-full left-0 top-0 grid place-content-center'
-                            )}
-                          >
-                            -
-                          </span>
-                        )}
-                        {!cell && !isActive && (
-                          <span
-                            className={cn(
-                              'absolute size-full left-0 top-0 grid place-content-center cursor-not-allowed'
-                            )}
-                          >
-                            ×
-                          </span>
-                        )}
-                      </button>
+                      <StatusCell
+                        active={isActive}
+                        cell={cell}
+                        onCycle={() => handleToggle(item.id, iso, cell)}
+                        onRequestNote={() => handleNoteRequest(item.id, iso, cell)}
+                      />
                     </td>
                   );
                 })}
@@ -544,8 +615,124 @@ function StatusGrid({
             );
           })}
         </tbody>
-      </table>
-    </div>
+        </table>
+      </div>
+
+      <Dialog open={!!notePreview} onOpenChange={(open) => !open && setNotePreview(null)}>
+        <DialogContent className="glass-panel max-w-sm rounded-3xl border border-border/70 text-right shadow-glow-soft">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-foreground">
+              ملاحظة الحالة
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              {notePreview?.trackerTitle} • {notePreview?.itemLabel}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-2xl border border-border/60 bg-background/60 p-4 text-sm text-foreground">
+            {notePreview?.note ?? 'لا توجد ملاحظة مسجلة.'}
+          </div>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              className="rounded-full"
+              onClick={() => setNotePreview(null)}
+            >
+              إغلاق
+            </Button>
+            {notePreview?.note ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full"
+                onClick={() => {
+                  if (!notePreview) return;
+                  setNoteEditor(notePreview);
+                  setNotePreview(null);
+                }}
+              >
+                تعديل
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                className="rounded-full bg-primary px-6 text-primary-foreground"
+                onClick={() => {
+                  if (!notePreview) return;
+                  setNoteEditor({ ...notePreview, note: null });
+                  setNotePreview(null);
+                }}
+              >
+                إضافة ملاحظة
+              </Button>
+            )}
+            {notePreview?.note ? (
+              <Button
+                type="button"
+                variant="destructive"
+                className="rounded-full"
+                onClick={handleDeleteNote}
+              >
+                حذف
+              </Button>
+            ) : null}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Sheet open={!!noteEditor} onOpenChange={handleCloseEditor}>
+        <SheetContent
+          side="bottom"
+          className="glass-panel max-h-[70vh] overflow-y-auto rounded-t-[2rem] border border-border p-6 pb-16 shadow-glow-soft"
+        >
+          <SheetHeader className="text-right">
+            <SheetTitle>ملاحظة الحالة</SheetTitle>
+            <SheetDescription>
+              {noteEditor?.trackerTitle} • {noteEditor?.itemLabel}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6 space-y-3">
+            <Textarea
+              value={noteDraft}
+              onChange={(event) => setNoteDraft(event.target.value)}
+              rows={5}
+              className="w-full rounded-2xl border border-border/60 bg-white/5 p-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              placeholder="اكتب ملاحظتك حول هذه الحالة..."
+            />
+            <p className="text-xs text-muted-foreground">
+              يمكن ترك الحقل فارغاً لإزالة الملاحظة الحالية.
+            </p>
+          </div>
+          <SheetFooter className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              className="rounded-full"
+              onClick={() => setNoteEditor(null)}
+            >
+              إلغاء
+            </Button>
+            {noteEditor?.note ? (
+              <Button
+                type="button"
+                variant="destructive"
+                className="rounded-full px-6"
+                onClick={() => saveStatusNote('')}
+              >
+                إزالة الملاحظة
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              className="rounded-full bg-primary px-6 text-primary-foreground shadow-glow-soft"
+              onClick={() => saveStatusNote(noteDraft)}
+            >
+              حفظ
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }
 
@@ -859,6 +1046,92 @@ function NotesCell({
         <span className="line-clamp-1 size-full text-center">{note}</span>
       ) : (
         'أضف ملاحظة'
+      )}
+    </button>
+  );
+}
+
+type StatusCellProps = {
+  active: boolean;
+  cell?: StatusTracker['cells'][string][string];
+  onCycle: () => void;
+  onRequestNote: () => void;
+};
+
+function StatusCell({ active, cell, onCycle, onRequestNote }: StatusCellProps) {
+  const clickTimeoutRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (clickTimeoutRef.current !== null) {
+        window.clearTimeout(clickTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleClick = () => {
+    if (!active) return;
+    if (clickTimeoutRef.current !== null) return;
+    clickTimeoutRef.current = window.setTimeout(() => {
+      clickTimeoutRef.current = null;
+      onCycle();
+    }, 200);
+  };
+
+  const handleDoubleClick = (
+    event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ) => {
+    if (!active) return;
+    if (!cell || cell.status === 'done') return;
+    event.preventDefault();
+    if (clickTimeoutRef.current !== null) {
+      window.clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = null;
+    }
+    onRequestNote();
+  };
+
+  return (
+    <button
+      type="button"
+      disabled={!active}
+      onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
+      className={cn(
+        'absolute top-0 left-0 size-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary z-20',
+        !active && 'bg-muted/30 text-muted-foreground/70',
+        active && 'bg-white/5 hover:bg-white/10'
+      )}
+    >
+      {cell ? (
+        <span
+          className={cn(
+            'absolute size-full left-0 top-0 grid place-content-center',
+            statusColorMap[cell.status] ??
+              'bg-white/10 text-foreground border-border/40'
+          )}
+        >
+          {cell.note ? (
+            <span className="absolute top-1 left-1 inline-flex size-2 rounded-full bg-primary" />
+          ) : null}
+          {statusLabel(cell.status) === 'تم' ? (
+            <Check />
+          ) : statusLabel(cell.status) === 'لم يتم' ? (
+            <X />
+          ) : statusLabel(cell.status) === 'جزئي' ? (
+            <Minus />
+          ) : (
+            '×'
+          )}
+        </span>
+      ) : active ? (
+        <span className="absolute size-full left-0 top-0 grid place-content-center">
+          -
+        </span>
+      ) : (
+        <span className="absolute size-full left-0 top-0 grid place-content-center cursor-not-allowed">
+          ×
+        </span>
       )}
     </button>
   );
