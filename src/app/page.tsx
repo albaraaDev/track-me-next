@@ -153,31 +153,6 @@ export default function Home() {
           onEdit={handleEditProject}
           onDelete={handleDeleteProject}
         />
-
-        <section className="glass-panel rounded-3xl p-6 shadow-glass animate-fade-in-up">
-          <header className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">جاهز للتخصيص</p>
-              <h2 className="mt-1 text-xl font-semibold">أحدث الإحصاءات</h2>
-            </div>
-            <span className="rounded-full bg-primary/10 px-4 py-1 text-xs text-primary">
-              لوحة متكاملة قريباً
-            </span>
-          </header>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <div className="glass-panel-muted rounded-2xl p-4">
-              <p className="text-sm text-muted-foreground">
-                ستوفر صفحة الإحصاءات الذكية نظرة معمقة على الأداء، مع منحنيات المصغرات (sparklines) ومؤشرات
-                تساعدك على اتخاذ قرارات يومية.
-              </p>
-            </div>
-            <div className="glass-panel-muted rounded-2xl p-4">
-              <p className="text-sm text-muted-foreground">
-                ستحصل على توصيات محلية مثل تذكير بالمهام منخفضة الإنجاز، وكل ذلك دون مغادرة بيانات جهازك.
-              </p>
-            </div>
-          </div>
-        </section>
       </AppShell>
 
       <ProjectCreateSheet open={isCreateProjectOpen} onOpenChange={setIsCreateProjectOpen} />
