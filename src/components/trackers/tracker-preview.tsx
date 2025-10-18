@@ -249,14 +249,26 @@ type NoteCellState = {
   note: string | null;
 };
 
-type StatusNoteState = {
+type StatusEditorState = {
+  trackerId: string;
+  trackerTitle: string;
+  itemId: string;
+  itemLabel: string;
+  iso: string;
+  currentStatus: StatusTracker['cells'][string][string]['status'] | null;
+  currentNote: string | null;
+  nextStatus: StatusTracker['cells'][string][string]['status'] | null;
+  noteDraft: string;
+};
+
+type StatusPreviewState = {
   trackerId: string;
   trackerTitle: string;
   itemId: string;
   itemLabel: string;
   iso: string;
   status: StatusTracker['cells'][string][string]['status'];
-  note: string | null;
+  note: string;
 };
 
 function StatusTrackerPreview({
@@ -406,122 +418,51 @@ function StatusGrid({
   sectionId: string;
 }) {
   const { updateTracker } = useAppActions();
-  const [notePreview, setNotePreview] = React.useState<StatusNoteState | null>(null);
-  const [noteEditor, setNoteEditor] = React.useState<StatusNoteState | null>(null);
-  const [noteDraft, setNoteDraft] = React.useState('');
-
-  React.useEffect(() => {
-    if (noteEditor) {
-      setNoteDraft(noteEditor.note ?? '');
-    } else {
-      setNoteDraft('');
-    }
-  }, [noteEditor]);
-
-  const handleToggle = React.useCallback(
-    (
-      itemId: string,
-      isoDate: string,
-      cell?: StatusTracker['cells'][string][string]
-    ) => {
-      const sequence: StatusTracker['cells'][string][string]['status'][] = [
-        'done',
-        'partial',
-        'missed',
-      ];
-
-      const currentIndex = cell ? sequence.indexOf(cell.status) : -1;
-      const nextIndex = currentIndex + 1;
-      const nextCells = { ...(tracker.cells ?? {}) };
-      const itemCells = { ...(nextCells[itemId] ?? {}) };
-
-      if (nextIndex >= sequence.length) {
-        delete itemCells[isoDate];
-      } else {
-        const nextStatus = sequence[nextIndex];
-        itemCells[isoDate] = {
-          status: nextStatus,
-          note: cell?.note,
-          updatedAt: new Date().toISOString(),
-        };
-      }
-
-      if (Object.keys(itemCells).length === 0) {
-        delete nextCells[itemId];
-      } else {
-        nextCells[itemId] = itemCells;
-      }
-
-      updateTracker(projectId, sectionId, tracker.id, {
-        cells: nextCells,
+  const [statusEditor, setStatusEditor] = React.useState<StatusEditorState | null>(null);
+  const openEditor = React.useCallback(
+    (itemId: string, isoDate: string) => {
+      const cell = tracker.cells?.[itemId]?.[isoDate];
+      const item = tracker.items.find((entry) => entry.id === itemId);
+      setStatusEditor({
+        trackerId: tracker.id,
+        trackerTitle: tracker.title,
+        itemId,
+        itemLabel: item?.label ?? 'عنصر',
+        iso: isoDate,
+        currentStatus: cell?.status ?? null,
+        currentNote: cell?.note ?? null,
+        nextStatus: cell?.status ?? 'done',
+        noteDraft: cell?.note ?? '',
       });
     },
-    [projectId, sectionId, tracker.cells, tracker.id, updateTracker]
+    [tracker]
   );
+  const [notePreview, setNotePreview] = React.useState<StatusPreviewState | null>(null);
 
-  const handleNoteRequest = React.useCallback(
-    (
-      itemId: string,
-      isoDate: string,
-      cell?: StatusTracker['cells'][string][string]
-    ) => {
-      if (!cell || cell.status === 'done') return;
+  const openPreview = React.useCallback(
+    (itemId: string, isoDate: string) => {
+      const cell = tracker.cells?.[itemId]?.[isoDate];
+      if (!cell || !cell.note) return;
       const item = tracker.items.find((entry) => entry.id === itemId);
-      const payload: StatusNoteState = {
+      setNotePreview({
         trackerId: tracker.id,
         trackerTitle: tracker.title,
         itemId,
         itemLabel: item?.label ?? 'عنصر',
         iso: isoDate,
         status: cell.status,
-        note: cell.note ?? null,
-      };
-      if (cell.note && cell.note.trim().length) {
-        setNotePreview(payload);
-      } else {
-        setNoteEditor(payload);
-      }
+        note: cell.note,
+      });
     },
     [tracker]
   );
 
-  const saveStatusNote = React.useCallback(
-    (value: string) => {
-      if (!noteEditor) return;
-      const trimmed = value.trim();
-      const nextCells = { ...(tracker.cells ?? {}) };
-      const itemCells = { ...(nextCells[noteEditor.itemId] ?? {}) };
-      const existing = itemCells[noteEditor.iso];
-      if (!existing) {
-        setNoteEditor(null);
-        setNoteDraft('');
-        return;
-      }
-      itemCells[noteEditor.iso] = {
-        ...existing,
-        status: existing.status ?? noteEditor.status,
-        note: trimmed ? trimmed : undefined,
-        updatedAt: new Date().toISOString(),
-      };
-      nextCells[noteEditor.itemId] = itemCells;
-      updateTracker(projectId, sectionId, tracker.id, {
-        cells: nextCells,
-      });
-      setNoteEditor(null);
-      setNoteDraft('');
-      setNotePreview((current) => {
-        if (
-          current &&
-          current.itemId === noteEditor.itemId &&
-          current.iso === noteEditor.iso
-        ) {
-          return { ...current, note: trimmed || null };
-        }
-        return current;
-      });
-    },
-    [noteEditor, tracker.cells, updateTracker, projectId, sectionId, tracker.id]
-  );
+  const handlePreviewEdit = React.useCallback(() => {
+    if (!notePreview) return;
+    const { itemId, iso } = notePreview;
+    setNotePreview(null);
+    openEditor(itemId, iso);
+  }, [notePreview, openEditor]);
 
   const handleDeleteNote = React.useCallback(() => {
     if (!notePreview) return;
@@ -544,11 +485,46 @@ function StatusGrid({
     setNotePreview(null);
   }, [notePreview, tracker.cells, updateTracker, projectId, sectionId, tracker.id]);
 
-  const handleCloseEditor = React.useCallback((open: boolean) => {
+  const closeEditor = React.useCallback((open: boolean) => {
     if (!open) {
-      setNoteEditor(null);
+      setStatusEditor(null);
     }
   }, []);
+
+  const commitStatus = React.useCallback(() => {
+    if (!statusEditor) return;
+    const nextCells = { ...(tracker.cells ?? {}) };
+    const itemCells = { ...(nextCells[statusEditor.itemId] ?? {}) };
+    const trimmed = statusEditor.noteDraft.trim();
+
+    if (!statusEditor.nextStatus) {
+      delete itemCells[statusEditor.iso];
+      if (Object.keys(itemCells).length) {
+        nextCells[statusEditor.itemId] = itemCells;
+      } else {
+        delete nextCells[statusEditor.itemId];
+      }
+      updateTracker(projectId, sectionId, tracker.id, {
+        cells: nextCells,
+      });
+      setStatusEditor(null);
+      return;
+    }
+
+    itemCells[statusEditor.iso] = {
+      status: statusEditor.nextStatus,
+      note:
+        statusEditor.nextStatus === 'partial' || statusEditor.nextStatus === 'missed'
+          ? trimmed || undefined
+          : undefined,
+      updatedAt: new Date().toISOString(),
+    };
+    nextCells[statusEditor.itemId] = itemCells;
+    updateTracker(projectId, sectionId, tracker.id, {
+      cells: nextCells,
+    });
+    setStatusEditor(null);
+  }, [statusEditor, tracker.cells, updateTracker, projectId, sectionId, tracker.id]);
 
   if (!tracker.items.length) {
     return (
@@ -558,63 +534,84 @@ function StatusGrid({
     );
   }
 
+  const statusOptions: Array<{
+    value: StatusTracker['cells'][string][string]['status'];
+    label: string;
+    badge: string;
+  }> = [
+    { value: 'done', label: 'تم', badge: 'bg-status-done/20 text-status-done' },
+    { value: 'partial', label: 'جزئي', badge: 'bg-status-partial/20 text-status-partial' },
+    { value: 'missed', label: 'لم يتم', badge: 'bg-status-missed/20 text-status-missed' },
+  ];
+
+  const showNoteField =
+    statusEditor?.nextStatus === 'partial' || statusEditor?.nextStatus === 'missed';
+  const formattedDate = statusEditor ? formatAppDate(statusEditor.iso, 'd MMM yyyy') : null;
+  const previewDate = notePreview ? formatAppDate(notePreview.iso, 'd MMM yyyy') : null;
+
   return (
     <>
       <div className="overflow-x-auto rounded-2xl border border-border/60">
         <table className="min-w-full border-separate border-spacing-0 text-xs">
-        <thead>
-          <tr>
-            <th className="sticky right-0 z-10 bg-background px-4 py-3 text-center font-semibold text-foreground shadow-[2px_0_6px_rgba(15,23,42,0.08)] backdrop-blur">
-              العنصر
-            </th>
-            {dateRange.map((date) => {
-              const dateKey = toAppDateString(date);
+          <thead>
+            <tr>
+              <th className="sticky right-0 z-10 bg-background px-4 py-3 text-center font-semibold text-foreground shadow-[2px_0_6px_rgba(15,23,42,0.08)] backdrop-blur">
+                العنصر
+              </th>
+              {dateRange.map((date) => {
+                const dateKey = toAppDateString(date);
+                return (
+                  <th
+                    key={dateKey}
+                    className="min-w-[95px] bg-white/5 px-3 py-2 text-center font-medium text-muted-foreground"
+                  >
+                    <div>{format(date, 'd MMM', { locale: ar })}</div>
+                    <div className="text-[10px] text-muted-foreground/80">
+                      {weekdayLabels[date.getDay()]}
+                    </div>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {tracker.items.map((item) => {
+              const dayCells = tracker.cells?.[item.id] ?? {};
               return (
-                <th
-                  key={dateKey}
-                  className="min-w-[95px] bg-white/5 px-3 py-2 text-center font-medium text-muted-foreground"
-                >
-                  <div>{format(date, 'd MMM', { locale: ar })}</div>
-                  <div className="text-[10px] text-muted-foreground/80">
-                    {weekdayLabels[date.getDay()]}
-                  </div>
-                </th>
+                <tr key={item.id} className="border-t border-border/60">
+                  <td className="sticky right-0 z-10 bg-background min-w-[115px] px-4 py-3 text-sm text-center text-foreground shadow-[2px_0_6px_rgba(15,23,42,0.08)] backdrop-blur">
+                    {item.label}
+                  </td>
+                  {dateRange.map((date) => {
+                    const iso = toAppDateString(date);
+                    const cell = dayCells?.[iso];
+                    const isActive = tracker.activeWeekdays.includes(date.getDay());
+                    const canPreview =
+                      !!cell &&
+                      (cell.status === 'partial' || cell.status === 'missed') &&
+                      typeof cell.note === 'string' &&
+                      cell.note.trim().length > 0;
+                    return (
+                      <td
+                        key={iso}
+                        className="min-w-[95px] border-l border-border/40 p-0 text-center relative"
+                      >
+                        <StatusCell
+                          active={isActive}
+                          cell={cell}
+                          onOpen={() => {
+                            if (!isActive) return;
+                            openEditor(item.id, iso);
+                          }}
+                          onPreview={canPreview ? () => openPreview(item.id, iso) : undefined}
+                        />
+                      </td>
+                    );
+                  })}
+                </tr>
               );
             })}
-          </tr>
-        </thead>
-        <tbody>
-          {tracker.items.map((item) => {
-            const dayCells = tracker.cells?.[item.id] ?? {};
-            return (
-              <tr key={item.id} className="border-t border-border/60">
-                <td className="sticky right-0 z-10 bg-background min-w-[115px] px-4 py-3 text-sm text-center text-foreground shadow-[2px_0_6px_rgba(15,23,42,0.08)] backdrop-blur">
-                  {item.label}
-                </td>
-                {dateRange.map((date) => {
-                  const iso = toAppDateString(date);
-                  const cell = dayCells?.[iso];
-                  const isActive = tracker.activeWeekdays.includes(
-                    date.getDay()
-                  );
-                  return (
-                    <td
-                      key={iso}
-                      className="min-w-[95px] border-l border-border/40 p-0 text-center relative"
-                    >
-                      <StatusCell
-                        active={isActive}
-                        cell={cell}
-                        onCycle={() => handleToggle(item.id, iso, cell)}
-                        onRequestNote={() => handleNoteRequest(item.id, iso, cell)}
-                      />
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
-        </tbody>
+          </tbody>
         </table>
       </div>
 
@@ -628,8 +625,11 @@ function StatusGrid({
               {notePreview?.trackerTitle} • {notePreview?.itemLabel}
             </DialogDescription>
           </DialogHeader>
-          <div className="rounded-2xl border border-border/60 bg-background/60 p-4 text-sm text-foreground">
-            {notePreview?.note ?? 'لا توجد ملاحظة مسجلة.'}
+          <div className="rounded-2xl border border-border/60 bg-background/60 p-4 text-sm text-foreground leading-relaxed space-y-2">
+            <p className="text-xs text-muted-foreground">
+              التاريخ: {previewDate ?? '—'} • الحالة: {notePreview ? statusLabel(notePreview.status) : '—'}
+            </p>
+            <p>{notePreview?.note ?? 'لا توجد ملاحظة مسجلة.'}</p>
           </div>
           <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Button
@@ -640,94 +640,136 @@ function StatusGrid({
             >
               إغلاق
             </Button>
-            {notePreview?.note ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-full"
-                onClick={() => {
-                  if (!notePreview) return;
-                  setNoteEditor(notePreview);
-                  setNotePreview(null);
-                }}
-              >
-                تعديل
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                className="rounded-full bg-primary px-6 text-primary-foreground"
-                onClick={() => {
-                  if (!notePreview) return;
-                  setNoteEditor({ ...notePreview, note: null });
-                  setNotePreview(null);
-                }}
-              >
-                إضافة ملاحظة
-              </Button>
-            )}
-            {notePreview?.note ? (
-              <Button
-                type="button"
-                variant="destructive"
-                className="rounded-full"
-                onClick={handleDeleteNote}
-              >
-                حذف
-              </Button>
-            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full"
+              onClick={handlePreviewEdit}
+            >
+              تعديل
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              className="rounded-full"
+              onClick={handleDeleteNote}
+            >
+              حذف الملاحظة
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Sheet open={!!noteEditor} onOpenChange={handleCloseEditor}>
+      <Sheet open={!!statusEditor} onOpenChange={closeEditor}>
         <SheetContent
           side="bottom"
-          className="glass-panel max-h-[70vh] overflow-y-auto rounded-t-[2rem] border border-border p-6 pb-16 shadow-glow-soft"
+          className="glass-panel max-h-[75vh] overflow-y-auto rounded-t-[2rem] border border-border p-6 pb-16 shadow-glow-soft"
         >
           <SheetHeader className="text-right">
-            <SheetTitle>ملاحظة الحالة</SheetTitle>
+            <SheetTitle>تحديث الحالة</SheetTitle>
             <SheetDescription>
-              {noteEditor?.trackerTitle} • {noteEditor?.itemLabel}
+              {statusEditor?.trackerTitle} • {statusEditor?.itemLabel}
             </SheetDescription>
           </SheetHeader>
-          <div className="mt-6 space-y-3">
-            <Textarea
-              value={noteDraft}
-              onChange={(event) => setNoteDraft(event.target.value)}
-              rows={5}
-              className="w-full rounded-2xl border border-border/60 bg-white/5 p-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              placeholder="اكتب ملاحظتك حول هذه الحالة..."
-            />
-            <p className="text-xs text-muted-foreground">
-              يمكن ترك الحقل فارغاً لإزالة الملاحظة الحالية.
-            </p>
-          </div>
+
+          {statusEditor ? (
+            <div className="mt-6 space-y-4 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                {statusOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={cn(
+                      'rounded-full border border-border/60 px-4 py-1 text-xs transition',
+                      statusEditor.nextStatus === option.value
+                        ? `${option.badge} shadow-glow-soft`
+                        : 'bg-white/5 text-muted-foreground hover:bg-white/10'
+                    )}
+                    onClick={() =>
+                      setStatusEditor((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              nextStatus: option.value,
+                              noteDraft:
+                                option.value === 'partial' || option.value === 'missed'
+                                  ? prev.noteDraft
+                                  : '',
+                            }
+                          : prev
+                      )
+                    }
+                  >
+                    {option.label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={cn(
+                    'rounded-full border border-border/60 px-4 py-1 text-xs text-muted-foreground hover:bg-white/10',
+                    statusEditor.nextStatus === null && 'bg-muted text-foreground shadow-glow-soft'
+                  )}
+                  onClick={() =>
+                    setStatusEditor((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            nextStatus: null,
+                            noteDraft: '',
+                          }
+                        : prev
+                    )
+                  }
+                >
+                  إزالة الحالة
+                </button>
+              </div>
+
+              {showNoteField ? (
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-muted-foreground">
+                    ملاحظة مرافقة (اختياري)
+                  </label>
+                  <Textarea
+                    rows={4}
+                    value={statusEditor.noteDraft}
+                    onChange={(event) =>
+                      setStatusEditor((prev) =>
+                        prev ? { ...prev, noteDraft: event.target.value } : prev
+                      )
+                    }
+                    className="w-full rounded-2xl border border-border/60 bg-white/5 p-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    placeholder="اكتب تفاصيل إضافية حول هذه الحالة"
+                  />
+                </div>
+              ) : null}
+
+              <div className="rounded-2xl border border-border/60 bg-white/5 p-3 text-xs text-muted-foreground">
+                <p>التاريخ: {formattedDate ?? '—'}</p>
+                <p className="mt-1">
+                  الحالة الحالية: {statusEditor.currentStatus ? statusLabel(statusEditor.currentStatus) : 'بدون حالة'}
+                </p>
+                <p className="mt-1">
+                  الحالة الجديدة: {statusEditor.nextStatus ? statusLabel(statusEditor.nextStatus) : 'إزالة الحالة'}
+                </p>
+              </div>
+            </div>
+          ) : null}
           <SheetFooter className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="ghost"
               className="rounded-full"
-              onClick={() => setNoteEditor(null)}
+              onClick={() => setStatusEditor(null)}
             >
               إلغاء
             </Button>
-            {noteEditor?.note ? (
-              <Button
-                type="button"
-                variant="destructive"
-                className="rounded-full px-6"
-                onClick={() => saveStatusNote('')}
-              >
-                إزالة الملاحظة
-              </Button>
-            ) : null}
             <Button
               type="button"
               className="rounded-full bg-primary px-6 text-primary-foreground shadow-glow-soft"
-              onClick={() => saveStatusNote(noteDraft)}
+              onClick={commitStatus}
             >
-              حفظ
+              حفظ الحالة
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -1054,12 +1096,19 @@ function NotesCell({
 type StatusCellProps = {
   active: boolean;
   cell?: StatusTracker['cells'][string][string];
-  onCycle: () => void;
-  onRequestNote: () => void;
+  onOpen: () => void;
+  onPreview?: () => void;
 };
 
-function StatusCell({ active, cell, onCycle, onRequestNote }: StatusCellProps) {
+function StatusCell({ active, cell, onOpen, onPreview }: StatusCellProps) {
   const clickTimeoutRef = React.useRef<number | null>(null);
+  const shouldPreview =
+    !!onPreview &&
+    active &&
+    !!cell &&
+    (cell.status === 'partial' || cell.status === 'missed') &&
+    typeof cell.note === 'string' &&
+    cell.note.trim().length > 0;
 
   React.useEffect(() => {
     return () => {
@@ -1069,34 +1118,35 @@ function StatusCell({ active, cell, onCycle, onRequestNote }: StatusCellProps) {
     };
   }, []);
 
-  const handleClick = () => {
-    if (!active) return;
-    if (clickTimeoutRef.current !== null) return;
-    clickTimeoutRef.current = window.setTimeout(() => {
-      clickTimeoutRef.current = null;
-      onCycle();
-    }, 200);
-  };
-
-  const handleDoubleClick = (
-    event: React.MouseEvent<HTMLButtonElement, MouseEvent>
-  ) => {
-    if (!active) return;
-    if (!cell || cell.status === 'done') return;
-    event.preventDefault();
-    if (clickTimeoutRef.current !== null) {
-      window.clearTimeout(clickTimeoutRef.current);
-      clickTimeoutRef.current = null;
-    }
-    onRequestNote();
-  };
-
   return (
     <button
       type="button"
       disabled={!active}
-      onClick={handleClick}
-      onDoubleClick={handleDoubleClick}
+      onClick={() => {
+        if (!active) return;
+        if (shouldPreview) {
+          if (clickTimeoutRef.current !== null) return;
+          clickTimeoutRef.current = window.setTimeout(() => {
+            clickTimeoutRef.current = null;
+            onPreview?.();
+          }, 220);
+          return;
+        }
+        onOpen();
+      }}
+      onDoubleClick={(event) => {
+        if (!active) return;
+        if (shouldPreview) {
+          event.preventDefault();
+          if (clickTimeoutRef.current !== null) {
+            window.clearTimeout(clickTimeoutRef.current);
+            clickTimeoutRef.current = null;
+          }
+          onOpen();
+          return;
+        }
+        onOpen();
+      }}
       className={cn(
         'absolute top-0 left-0 size-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary z-20',
         !active && 'bg-muted/30 text-muted-foreground/70',
