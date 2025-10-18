@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ArrowRight, CalendarDays, Table2, User2 } from 'lucide-react';
+import { ArrowRight, CalendarDays, Table2 } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { useAppStore } from '@/store/app-store';
 import { ar } from 'date-fns/locale';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { TrackerCreateSheet } from '@/components/trackers/tracker-create-sheet';
 import { ProfileSheet } from '@/components/profile/profile-sheet';
 import { formatAppDate } from '@/lib/date';
+import { useHasMounted } from '@/hooks/use-has-mounted';
 
 type SectionPageProps = {
   params: { projectId: string; sectionId: string };
@@ -29,8 +30,8 @@ export default function SectionPage({ params }: SectionPageProps) {
   const trackerCount = section?.trackers.length ?? 0;
   const [isTrackerSheetOpen, setIsTrackerSheetOpen] = React.useState(false);
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
-  const [isClient, setIsClient] = React.useState(false);
   const hasHydrated = useAppStore((state) => state.hasHydrated);
+  const hasMounted = useHasMounted();
 
   const formatDate = React.useCallback(
     (date: string | null | undefined) =>
@@ -38,20 +39,41 @@ export default function SectionPage({ params }: SectionPageProps) {
     []
   );
 
-  React.useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  if (!isClient || !hasHydrated) {
+  if (!hasMounted || !hasHydrated) {
     return (
       <AppShell
         header={
           <div className="flex flex-col gap-4">
-            <div className="glass-panel h-40 rounded-3xl animate-pulse" />
+            <header className="glass-panel rounded-3xl p-6 shadow-glass">
+              <div className="flex flex-col gap-5">
+                <div className="flex items-start gap-4">
+                  <div className="inline-flex size-10 items-center justify-center rounded-md border border-border/70 text-xs text-muted-foreground" />
+                  <div className="flex-1 space-y-3">
+                    <div className="h-6 w-40 rounded-full bg-muted animate-pulse" />
+                    <div className="h-4 w-3/4 rounded-full bg-muted/80 animate-pulse" />
+                  </div>
+                  <div className="h-10 w-28 rounded-2xl bg-muted animate-pulse" />
+                </div>
+                <div className="space-y-2">
+                  <div className="h-4 w-full rounded-full bg-muted/70 animate-pulse" />
+                  <div className="h-4 w-2/3 rounded-full bg-muted/60 animate-pulse" />
+                </div>
+                <div className="grid gap-3 text-xs text-muted-foreground grid-cols-2">
+                  <div className="h-16 rounded-2xl bg-muted/60 animate-pulse" />
+                  <div className="h-16 rounded-2xl bg-muted/60 animate-pulse" />
+                </div>
+              </div>
+            </header>
           </div>
         }
       >
-        <section className="glass-panel h-64 rounded-3xl animate-pulse" />
+        <section className="flex flex-col gap-4 rounded-3xl">
+          <div className="flex items-center justify-between gap-2">
+            <div className="h-6 w-32 rounded-full bg-muted animate-pulse" />
+            <div className="h-10 w-28 rounded-full bg-muted animate-pulse" />
+          </div>
+          <div className="glass-panel h-64 rounded-3xl animate-pulse" />
+        </section>
       </AppShell>
     );
   }

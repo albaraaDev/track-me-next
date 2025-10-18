@@ -7,6 +7,7 @@ import { ProjectList } from "@/components/projects/project-list";
 import { ProjectCreateSheet } from "@/components/projects/project-create-sheet";
 import { ProfileSheet } from "@/components/profile/profile-sheet";
 import { useAppActions, useAppStore } from "@/store/app-store";
+import { useHasMounted } from "@/hooks/use-has-mounted";
 import {
   buildExportFileName,
   createExportBlob,
@@ -42,8 +43,8 @@ export default function Home() {
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const { hydrate, setLastBackupAt } = useAppActions();
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
-  const [isClient, setIsClient] = React.useState(false);
   const hasHydrated = useAppStore((state) => state.hasHydrated);
+  const hasMounted = useHasMounted();
 
   const showFeedback = React.useCallback((type: "success" | "error", message: string) => {
     setFeedback({ type, message });
@@ -119,11 +120,7 @@ export default function Home() {
     return () => window.clearTimeout(timeout);
   }, [feedback]);
 
-  React.useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  if (!isClient || !hasHydrated) {
+  if (!hasMounted || !hasHydrated) {
     return (
       <AppShell
         header={

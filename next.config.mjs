@@ -17,4 +17,7 @@ export default withPWA({
   skipWaiting: true,
   runtimeCaching,
   buildExcludes: [/app-build-manifest\.json$/],
+  fallback: {
+    document: "/offline.html",
+  },
 })(nextConfig);

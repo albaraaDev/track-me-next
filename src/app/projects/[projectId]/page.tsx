@@ -3,14 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import {
-  ArrowRight,
-  CalendarDays,
-  Filter,
-  Layers,
-  Table2,
-  User2,
-} from 'lucide-react';
+import { ArrowRight, CalendarDays, Filter, Layers, Table2 } from 'lucide-react';
 import { ar } from 'date-fns/locale';
 import { AppShell } from '@/components/layout/app-shell';
 import { SectionList } from '@/components/sections/section-list';
@@ -30,6 +23,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { useHasMounted } from '@/hooks/use-has-mounted';
 
 const ProjectStats = dynamic(
   () =>
@@ -49,8 +43,8 @@ const formatDate = (date: string | null | undefined) =>
 export default function ProjectPage({ params }: ProjectPageProps) {
   const [isSectionSheetOpen, setIsSectionSheetOpen] = React.useState(false);
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
-  const [isClient, setIsClient] = React.useState(false);
   const hasHydrated = useAppStore((state) => state.hasHydrated);
+  const hasMounted = useHasMounted();
   const project = useAppStore(
     React.useCallback(
       (state) => state.projects.find((item) => item.id === params.projectId),
@@ -77,20 +71,42 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     setIsFiltersOpen(true);
   }, []);
 
-  React.useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  if (!isClient || !hasHydrated) {
+  if (!hasMounted || !hasHydrated) {
     return (
       <AppShell
         header={
           <div className="flex flex-col gap-4">
-            <div className="glass-panel h-40 rounded-3xl animate-pulse" />
+            <header className="glass-panel rounded-3xl p-4 shadow-glass">
+              <div className="flex flex-col gap-5">
+                <div className="flex items-start gap-4">
+                  <div className="inline-flex size-10 items-center justify-center rounded-md border border-border/70 text-xs text-muted-foreground" />
+                  <div className="flex-1 space-y-3">
+                    <div className="h-6 w-56 rounded-full bg-muted animate-pulse" />
+                    <div className="h-4 w-3/4 rounded-full bg-muted/80 animate-pulse" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-10 w-20 rounded-2xl bg-muted animate-pulse" />
+                    <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-4 w-full rounded-full bg-muted/70 animate-pulse" />
+                  <div className="h-4 w-2/3 rounded-full bg-muted/60 animate-pulse" />
+                </div>
+                <div className="grid gap-3 text-xs text-muted-foreground grid-cols-2 sm:grid-cols-3">
+                  <div className="h-16 rounded-2xl bg-muted/60 animate-pulse" />
+                  <div className="h-16 rounded-2xl bg-muted/60 animate-pulse" />
+                  <div className="h-16 rounded-2xl bg-muted/60 animate-pulse max-sm:col-span-2" />
+                </div>
+              </div>
+            </header>
           </div>
         }
       >
-        <section className="glass-panel h-64 rounded-3xl animate-pulse" />
+        <section className="flex flex-col gap-4">
+          <div className="glass-panel h-64 rounded-3xl animate-pulse" />
+          <div className="glass-panel h-64 rounded-3xl animate-pulse" />
+        </section>
       </AppShell>
     );
   }
