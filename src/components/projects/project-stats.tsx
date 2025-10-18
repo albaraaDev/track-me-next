@@ -30,10 +30,10 @@ type ProjectStatsProps = {
 };
 
 const MAX_SERIES_LABELS = 12;
-const { theme, systemTheme } = useTheme();
-
 
 export function ProjectStats({ project, metrics }: ProjectStatsProps) {
+  const { theme, systemTheme } = useTheme();
+
   if (!project) {
     return (
       <section className="glass-panel rounded-3xl p-6 shadow-glass text-center text-sm text-muted-foreground">
@@ -49,6 +49,7 @@ export function ProjectStats({ project, metrics }: ProjectStatsProps) {
       </section>
     );
   }
+
   const currentTheme = theme === 'system' ? systemTheme : theme;
   const { status, notes, timeframe } = metrics;
   const hasStatusData = status.total > 0;
