@@ -112,7 +112,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
           </header>
 
           <dl className="grid gap-3 text-xs text-muted-foreground grid-cols-2 sm:grid-cols-3">
-            <div className="flex items-center gap-2 rounded-2xl bg-white/5 p-3 backdrop-blur">
+            <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
               <CalendarDays className="size-4 text-primary" />
               <div>
                 <dt>تاريخ البداية</dt>
@@ -121,7 +121,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
                 </dd>
               </div>
             </div>
-            <div className="flex items-center gap-2 rounded-2xl bg-white/5 p-3 backdrop-blur">
+            <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
               <CalendarDays className="size-4 text-primary/70" />
               <div>
                 <dt>تاريخ النهاية</dt>
@@ -130,7 +130,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
                 </dd>
               </div>
             </div>
-            <div className="flex items-center gap-2 rounded-2xl bg-white/5 p-3 backdrop-blur">
+            <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
               <Layers className="size-4 text-primary/70" />
               <div>
                 <dt>الأقسام</dt>
@@ -151,7 +151,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
                 </dd>
               </div>
             </div>
-            <div className="flex items-center gap-2 rounded-2xl bg-white/5 p-3 backdrop-blur">
+            <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
               <Table2 className="size-4 text-primary/70" />
               <div>
                 <dt>الجداول</dt>

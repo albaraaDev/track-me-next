@@ -136,7 +136,7 @@ export function SectionCard({
 
           <Link href={`/projects/${projectId}/sections/${section.id}`}>
             <dl className="grid gap-3 text-xs text-muted-foreground grid-cols-2">
-              <div className="flex items-center gap-2 rounded-2xl bg-white/5 p-3 backdrop-blur">
+              <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
                 <CalendarDays className="size-4 text-primary" />
                 <div>
                   <dt>تاريخ البداية</dt>
@@ -145,7 +145,7 @@ export function SectionCard({
                   </dd>
                 </div>
               </div>
-              <div className="flex items-center gap-2 rounded-2xl bg-white/5 p-3 backdrop-blur">
+              <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
                 <CalendarDays className="size-4 text-primary/70" />
                 <div>
                   <dt>تاريخ النهاية</dt>

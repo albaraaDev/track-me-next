@@ -87,7 +87,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
               </div>
 
               <div className="grid gap-3 text-xs text-muted-foreground grid-cols-2 sm:grid-cols-3">
-                <div className="flex items-center gap-2 rounded-2xl bg-white/5 p-3 backdrop-blur">
+                <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
                   <CalendarDays className="size-4 text-primary" />
                   <div>
                     <p>تاريخ البداية</p>
@@ -96,7 +96,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 rounded-2xl bg-white/5 p-3 backdrop-blur">
+                <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
                   <CalendarDays className="size-4 text-primary/70" />
                   <div>
                     <p>{project?.endDate ? 'تاريخ النهاية' : 'حالة المشروع'}</p>
@@ -107,7 +107,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 rounded-2xl bg-white/5 p-3 backdrop-blur max-sm:col-span-2">
+                <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur max-sm:col-span-2">
                   <Layers className="size-4 text-primary/70" />
                   <div>
                     <p>عدد الأقسام</p>

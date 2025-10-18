@@ -121,7 +121,7 @@ export default function Home() {
     <>
       <AppShell
         header={
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 sticky top-4 z-40">
             <MainHeader
               onRequestProfile={handleProfile}
               onRequestImport={handleImport}
