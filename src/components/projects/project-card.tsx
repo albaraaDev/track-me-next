@@ -62,28 +62,27 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
 
   return (
     <>
-      <Link
-        href={`/projects/${project.id}`}
-        className="glass-panel relative overflow-hidden rounded-3xl p-5 shadow-glass transition hover:shadow-glow-soft"
-      >
+      <article className="glass-panel relative overflow-hidden rounded-3xl p-5 shadow-glass transition hover:shadow-glow-soft">
         <div className="absolute inset-0 z-0 bg-gradient-to-br from-primary/5 via-primary/0 to-accent/10" />
         <div className="relative z-10 flex flex-col gap-4">
           <header className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex size-12 items-center justify-center rounded-2xl border border-border/60 bg-white/25 text-2xl backdrop-blur">
-                <span aria-hidden>{project.icon || '📁'}</span>
+            <Link href={`/projects/${project.id}`} className='flex-1'>
+              <div className="flex items-center gap-3">
+                <div className="flex size-12 items-center justify-center rounded-2xl border border-border/60 bg-white/25 text-2xl backdrop-blur">
+                  <span aria-hidden>{project.icon || '📁'}</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {project.name}
+                  </h3>
+                  {project.description ? (
+                    <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                      {project.description}
+                    </p>
+                  ) : null}
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">
-                  {project.name}
-                </h3>
-                {project.description ? (
-                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                    {project.description}
-                  </p>
-                ) : null}
-              </div>
-            </div>
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -111,70 +110,72 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
             </DropdownMenu>
           </header>
 
-          <dl className="grid gap-3 text-xs text-muted-foreground grid-cols-2 sm:grid-cols-4">
-            <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
-              <CalendarDays className="size-4 text-primary" />
-              <div>
-                <dt>تاريخ البداية</dt>
-                <dd className="text-foreground">
-                  {formatDate(project.startDate)}
-                </dd>
+          <Link href={`/projects/${project.id}`}>
+            <dl className="grid gap-3 text-xs text-muted-foreground grid-cols-2 sm:grid-cols-4">
+              <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
+                <CalendarDays className="size-4 text-primary" />
+                <div>
+                  <dt>تاريخ البداية</dt>
+                  <dd className="text-foreground">
+                    {formatDate(project.startDate)}
+                  </dd>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
-              <CalendarDays className="size-4 text-primary/70" />
-              <div>
-                <dt>تاريخ النهاية</dt>
-                <dd className="text-foreground">
-                  {project.endDate ? formatDate(project.endDate) : 'مفتوح'}
-                </dd>
+              <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
+                <CalendarDays className="size-4 text-primary/70" />
+                <div>
+                  <dt>تاريخ النهاية</dt>
+                  <dd className="text-foreground">
+                    {project.endDate ? formatDate(project.endDate) : 'مفتوح'}
+                  </dd>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
-              <Layers className="size-4 text-primary/70" />
-              <div>
-                <dt>الأقسام</dt>
-                <dd
-                  className={`text-foreground ${
-                    sectionsCount === 0 ? 'italic text-red-500' : ''
-                  }`}
-                >
+              <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
+                <Layers className="size-4 text-primary/70" />
+                <div>
+                  <dt>الأقسام</dt>
+                  <dd
+                    className={`text-foreground ${
+                      sectionsCount === 0 ? 'italic text-red-500' : ''
+                    }`}
+                  >
                   {sectionsCount > 0
                     ? `${
                         sectionsCount === 1
                           ? 'قسم واحد'
                           : sectionsCount === 2
                           ? 'قسمان'
-                          : sectionsCount + 'أقسام'
+                          : `${sectionsCount} أقسام`
                       } `
                     : 'لم يتم إضافة أقسام بعد'}
-                </dd>
+                  </dd>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
-              <Table2 className="size-4 text-primary/70" />
-              <div>
-                <dt>الجداول</dt>
-                <dd
-                  className={`text-foreground ${
-                    trackersCount === 0 ? 'italic text-red-500' : ''
-                  }`}
-                >
-                  {trackersCount > 0
-                    ? `${
-                        trackersCount === 1
-                          ? 'جدول متابعة واحد'
-                          : trackersCount === 2
-                          ? 'جدولا متابعة'
-                          : trackersCount + ' جداول متابعة'
-                      } `
-                    : 'لم يتم إضافة جداول بعد'}
-                </dd>
+              <div className="flex items-center gap-2 rounded-2xl bg-gray-100 dark:bg-white/5 p-3 backdrop-blur">
+                <Table2 className="size-4 text-primary/70" />
+                <div>
+                  <dt>الجداول</dt>
+                  <dd
+                    className={`text-foreground ${
+                      trackersCount === 0 ? 'italic text-red-500' : ''
+                    }`}
+                  >
+                    {trackersCount > 0
+                      ? `${
+                          trackersCount === 1
+                            ? 'جدول متابعة واحد'
+                            : trackersCount === 2
+                            ? 'جدولا متابعة'
+                            : trackersCount + ' جداول متابعة'
+                        } `
+                      : 'لم يتم إضافة جداول بعد'}
+                  </dd>
+                </div>
               </div>
-            </div>
-          </dl>
+            </dl>
+          </Link>
         </div>
-      </Link>
+      </article>
 
       <ProjectEditSheet
         projectId={project.id}

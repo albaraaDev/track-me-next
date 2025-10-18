@@ -2,10 +2,10 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ArrowRight, CalendarDays, Layers, Table2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { ArrowRight, CalendarDays, Layers, Table2, User2 } from 'lucide-react';
 import { ar } from 'date-fns/locale';
 import { AppShell } from '@/components/layout/app-shell';
-import { MainHeader } from '@/components/layout/main-header';
 import { SectionList } from '@/components/sections/section-list';
 import { SectionCreateSheet } from '@/components/sections/section-create-sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,9 +13,19 @@ import { useAppStore } from '@/store/app-store';
 import { ProfileSheet } from '@/components/profile/profile-sheet';
 import { formatAppDate } from '@/lib/date';
 import { ProjectOverview } from '@/components/projects/project-overview';
-import { ProjectStats } from '@/components/projects/project-stats';
 import { computeProjectMetrics } from '@/lib/stats';
 import { ProjectFilters } from '@/components/projects/project-filters';
+import { Button } from '@/components/ui/button';
+
+const ProjectStats = dynamic(
+  () => import('@/components/projects/project-stats').then((mod) => mod.ProjectStats),
+  {
+    ssr: false,
+    loading: () => (
+      <section className="glass-panel h-64 rounded-3xl animate-pulse" aria-hidden="true" />
+    ),
+  },
+);
 
 type ProjectPageProps = {
   params: { projectId: string };
@@ -27,6 +37,8 @@ const formatDate = (date: string | null | undefined) =>
 export default function ProjectPage({ params }: ProjectPageProps) {
   const [isSectionSheetOpen, setIsSectionSheetOpen] = React.useState(false);
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+  const [isClient, setIsClient] = React.useState(false);
+  const hasHydrated = useAppStore((state) => state.hasHydrated);
   const project = useAppStore(
     React.useCallback(
       (state) => state.projects.find((item) => item.id === params.projectId),
@@ -48,11 +60,28 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     setIsSectionSheetOpen(true);
   }, []);
 
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient || !hasHydrated) {
+    return (
+      <AppShell
+        header={
+          <div className="flex flex-col gap-4">
+            <div className="glass-panel h-40 rounded-3xl animate-pulse" />
+          </div>
+        }
+      >
+        <section className="glass-panel h-64 rounded-3xl animate-pulse" />
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell
       header={
         <div className="flex flex-col gap-4">
-          {/* <MainHeader onRequestProfile={() => setIsProfileOpen(true)} /> */}
           <header className="glass-panel rounded-3xl p-4 shadow-glass">
             <div className="flex flex-col gap-5">
               <div className="flex items-start gap-4">
@@ -86,6 +115,16 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       : 'أضف نبذة ملهمة للمشروع لعرضها هنا.'}
                   </p>
                 </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="glass-panel-muted size-10 rounded-3xl border border-border/60 text-muted-foreground hover:text-foreground"
+                  aria-label="تعديل الهوية الشخصية"
+                  onClick={() => setIsProfileOpen(true)}
+                >
+                  <User2 className="size-5" />
+                </Button>
               </div>
 
               <div className="grid gap-3 text-xs text-muted-foreground grid-cols-2 sm:grid-cols-3">

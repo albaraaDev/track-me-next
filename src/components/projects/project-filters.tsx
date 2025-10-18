@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { FilterState } from '@/domain/types';
 import { useAppActions, useAppStore } from '@/store/app-store';
 import { cn } from '@/lib/utils';
@@ -23,7 +23,7 @@ export function ProjectFilters({ projectId }: ProjectFiltersProps) {
   const project = useAppStore((state) =>
     state.projects.find((entry) => entry.id === projectId)
   );
-  const { setTimeframe, setFilterRange, setIncludeOpenEnded } = useAppActions();
+  const { setTimeframe, setFilterRange, setIncludeOpenEnded, toggleFilterSection, setFilters } = useAppActions();
 
   const rangeDisplay = useMemo(() => {
     if (!filters.customRange?.from) return null;
@@ -33,6 +33,16 @@ export function ProjectFilters({ projectId }: ProjectFiltersProps) {
       : 'اليوم';
     return `${fromLabel} → ${toLabel}`;
   }, [filters.customRange]);
+
+  const selectedSections = useMemo(
+    () => (filters.sectionIds ?? []).filter((entry) => entry.projectId === projectId),
+    [filters.sectionIds, projectId]
+  );
+
+  const clearSectionFilters = useCallback(() => {
+    const remaining = (filters.sectionIds ?? []).filter((entry) => entry.projectId !== projectId);
+    setFilters({ sectionIds: remaining });
+  }, [filters.sectionIds, projectId, setFilters]);
 
   if (!project) return null;
 
@@ -97,7 +107,43 @@ export function ProjectFilters({ projectId }: ProjectFiltersProps) {
         />
         تضمين الجداول مفتوحة المدة (بدون تاريخ نهاية)
       </label>
+
+      {project.sections.length ? (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">تصفية الأقسام</span>
+            {selectedSections.length ? (
+              <button
+                type="button"
+                onClick={clearSectionFilters}
+                className="text-xs text-primary underline-offset-4 hover:underline"
+              >
+                إظهار كل الأقسام
+              </button>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {project.sections.map((section) => {
+              const isSelected = selectedSections.some((entry) => entry.sectionId === section.id);
+              return (
+                <button
+                  key={section.id}
+                  type="button"
+                  onClick={() => toggleFilterSection(project.id, section.id)}
+                  className={cn(
+                    'rounded-full border px-4 py-1 text-xs transition',
+                    isSelected
+                      ? 'border-primary bg-primary/15 text-primary shadow-glow-soft'
+                      : 'border-border/60 bg-white/5 text-muted-foreground hover:bg-white/10'
+                  )}
+                >
+                  {section.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
-

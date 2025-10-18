@@ -69,8 +69,6 @@ export function ProjectStats({ project, metrics }: ProjectStatsProps) {
       </div>
     );
   };
-  console.log(series);
-  
   return (
     <div className="space-y-6">
       <section className="glass-panel rounded-3xl border border-border/60 p-5 shadow-glow-soft">
