@@ -82,7 +82,7 @@ html {
   }
 
   * {
-    @apply border-border antialiased;
+    @apply border-border antialiased select-none;
   }
 
   body {

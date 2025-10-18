@@ -68,7 +68,7 @@ export function ProjectCard({
 
   return (
     <>
-      <article className="glass-panel relative overflow-hidden rounded-3xl p-5 shadow-glass transition hover:shadow-glow-soft">
+      <article className="glass-panel relative overflow-hidden rounded-3xl p-3 shadow-glass transition hover:shadow-glow-soft">
         <div className="absolute inset-0 z-0 bg-gradient-to-br from-primary/5 via-primary/0 to-accent/10" />
         <div className="relative z-10 flex flex-col gap-4">
           <header className="flex items-center justify-between gap-3">
@@ -77,7 +77,7 @@ export function ProjectCard({
             ) : null}
             <Link href={`/projects/${project.id}`} className="flex-1">
               <div className="flex items-center gap-3">
-                <div className="flex size-12 items-center justify-center rounded-2xl border border-border/60 bg-white/25 text-2xl backdrop-blur">
+                <div className="flex size-12 items-center justify-center rounded-2xl border border-border/60 bg-white/25 text-2xl backdrop-blur shrink-0">
                   <span aria-hidden>{project.icon || '📁'}</span>
                 </div>
                 <div>
