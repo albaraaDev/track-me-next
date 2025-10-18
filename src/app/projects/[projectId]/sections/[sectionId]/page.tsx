@@ -84,7 +84,15 @@ export default function SectionPage({ params }: SectionPageProps) {
                     </h1>
                     <div className="flex items-center gap-2 rounded-2xl bg-primary/5 p-3 text-xs text-primary shrink-0">
                       <Table2 className="size-4" />
-                      {trackerCount} جدول متابعة.
+                      {trackerCount > 0
+                        ? `${
+                            trackerCount === 1
+                              ? 'جدول متابعة واحد'
+                              : trackerCount === 2
+                              ? 'جدولا متابعة'
+                              : trackerCount + ' جداول متابعة'
+                          } `
+                        : 'لا توجد جداول بعد'}
                     </div>
                   </div>
                   <p className="text-sm leading-relaxed text-muted-foreground">
