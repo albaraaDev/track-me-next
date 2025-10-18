@@ -1,6 +1,13 @@
 'use client';
 
-import { Check, AlertTriangle, NotebookPen, CircleDot } from 'lucide-react';
+import { useState } from 'react';
+import {
+  Check,
+  AlertTriangle,
+  NotebookPen,
+  CircleDot,
+  ChevronDown,
+} from 'lucide-react';
 import { Project } from '@/domain/types';
 import { ProjectMetrics } from '@/lib/stats';
 import { formatAppDate } from '@/lib/date';
@@ -16,6 +23,11 @@ const formatPercentage = (value: number | null) => {
 };
 
 export function ProjectOverview({ project, metrics }: ProjectOverviewProps) {
+  const [expandedTop, setExpandedTop] = useState<string | null>(null);
+  const [expandedAttention, setExpandedAttention] = useState<string | null>(
+    null
+  );
+
   if (!project) {
     return (
       <section className="glass-panel rounded-3xl p-6 shadow-glass text-center text-sm text-muted-foreground">
@@ -41,7 +53,8 @@ export function ProjectOverview({ project, metrics }: ProjectOverviewProps) {
         <div className="flex flex-col gap-2">
           <h2 className="text-lg font-semibold text-foreground">نظرة عامة</h2>
           <p className="text-sm text-muted-foreground">
-            يعرض هذا الملخص أداء المشروع خلال الفترة المحددة ({timeframe.label}).
+            يعرض هذا الملخص أداء المشروع خلال الفترة المحددة ({timeframe.label}
+            ).
           </p>
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <span className="rounded-full bg-primary/10 px-3 py-1 text-primary">
@@ -53,7 +66,9 @@ export function ProjectOverview({ project, metrics }: ProjectOverviewProps) {
             {timeframe.from ? (
               <span className="rounded-full bg-accent px-3 py-1 text-accent-foreground">
                 من {formatAppDate(timeframe.from, 'd MMM yyyy')} إلى{' '}
-                {timeframe.to ? formatAppDate(timeframe.to, 'd MMM yyyy') : 'اليوم'}
+                {timeframe.to
+                  ? formatAppDate(timeframe.to, 'd MMM yyyy')
+                  : 'اليوم'}
               </span>
             ) : null}
           </div>
@@ -63,7 +78,9 @@ export function ProjectOverview({ project, metrics }: ProjectOverviewProps) {
       <section className="grid gap-4 lg:grid-cols-3">
         <article className="glass-panel rounded-3xl p-5 shadow-glass">
           <header className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">معدل الإنجاز</h3>
+            <h3 className="text-sm font-semibold text-foreground">
+              معدل الإنجاز
+            </h3>
             <Check className="size-5 text-primary" />
           </header>
           <p className="mt-4 text-3xl font-semibold text-foreground">
@@ -87,19 +104,54 @@ export function ProjectOverview({ project, metrics }: ProjectOverviewProps) {
 
         <article className="glass-panel rounded-3xl p-5 shadow-glass">
           <header className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">أفضل الإنجازات</h3>
+            <h3 className="text-sm font-semibold text-foreground">
+              أفضل الإنجازات
+            </h3>
             <CircleDot className="size-5 text-emerald-500" />
           </header>
           {hasStatusData && status.topPerformers.length ? (
             <ul className="mt-4 space-y-3 text-xs text-muted-foreground">
               {status.topPerformers.map((item) => (
-                <li key={item.trackerId} className="flex items-center justify-between gap-2">
-                  <span className="text-foreground font-medium line-clamp-1">
-                    {item.title}
-                  </span>
-                  <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] text-primary">
-                    {formatPercentage(item.rate)}
-                  </span>
+                <li key={item.trackerId} className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedTop((prev) =>
+                        prev === item.trackerId ? null : item.trackerId
+                      )
+                    }
+                    className="flex w-full items-center justify-between gap-2 rounded-2xl border border-border/60 bg-white/5 px-3 py-2 text-right text-[13px] text-foreground transition hover:bg-white/10"
+                    aria-expanded={expandedTop === item.trackerId}
+                  >
+                    <span className="line-clamp-1 font-semibold">
+                      {item.title}
+                    </span>
+                    <span className="flex items-center gap-2 text-xs text-primary">
+                      {formatPercentage(item.rate)}
+                      <ChevronDown
+                        className={`size-4 transition ${
+                          expandedTop === item.trackerId ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </span>
+                  </button>
+                  {expandedTop === item.trackerId && item.items.length ? (
+                    <ul className="space-y-1 rounded-2xl border border-border/60 bg-background/60 px-3 py-3 text-start text-xs text-muted-foreground">
+                      {item.items.map((entry) => (
+                        <li
+                          key={entry.itemId}
+                          className="flex items-center justify-between gap-2"
+                        >
+                          <span className="line-clamp-1 text-foreground">
+                            {entry.label}
+                          </span>
+                          <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] text-primary">
+                            {entry.done} من {entry.total}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -112,17 +164,60 @@ export function ProjectOverview({ project, metrics }: ProjectOverviewProps) {
 
         <article className="glass-panel rounded-3xl p-5 shadow-glass">
           <header className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">بحاجة إلى انتباه</h3>
+            <h3 className="text-sm font-semibold text-foreground">
+              بحاجة إلى انتباه
+            </h3>
             <AlertTriangle className="size-5 text-destructive" />
           </header>
           {hasStatusData && status.needsAttention.length ? (
             <ul className="mt-4 space-y-3 text-xs text-muted-foreground">
               {status.needsAttention.map((item) => (
-                <li key={item.trackerId} className="flex items-center justify-between gap-2">
-                  <span className="line-clamp-1 text-foreground">{item.title}</span>
-                  <span className="rounded-full bg-destructive/10 px-2 py-1 text-[11px] text-destructive">
-                    {item.missed} حالات متعثرة
-                  </span>
+                <li key={item.trackerId} className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedAttention((prev) =>
+                        prev === item.trackerId ? null : item.trackerId
+                      )
+                    }
+                    className="flex w-full items-center justify-between gap-2 rounded-2xl border border-border/60 bg-white/5 px-3 py-2 text-right text-[13px] text-foreground transition hover:bg-white/10"
+                    aria-expanded={expandedAttention === item.trackerId}
+                  >
+                    <span className="line-clamp-1 font-semibold">
+                      {item.title}
+                    </span>
+                    <span className="flex items-center gap-2 text-xs text-destructive">
+                      {item.missed === 1
+                        ? 'حالة واحدة'
+                        : item.missed === 2
+                        ? 'حالتان'
+                        : `${item.missed} حالات`}
+                      <ChevronDown
+                        className={`size-4 transition ${
+                          expandedAttention === item.trackerId
+                            ? 'rotate-180'
+                            : ''
+                        }`}
+                      />
+                    </span>
+                  </button>
+                  {expandedAttention === item.trackerId && item.items.length ? (
+                    <ul className="space-y-1 rounded-2xl border border-border/60 bg-background/60 px-3 py-3 text-start text-xs text-muted-foreground">
+                      {item.items.map((entry) => (
+                        <li
+                          key={entry.itemId}
+                          className="flex items-center justify-between gap-2"
+                        >
+                          <span className="line-clamp-1 text-foreground">
+                            {entry.label}
+                          </span>
+                          <span className="rounded-full bg-destructive/10 px-2 py-1 text-[11px] text-destructive">
+                            {entry.missed} من {entry.total}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -136,20 +231,27 @@ export function ProjectOverview({ project, metrics }: ProjectOverviewProps) {
 
       <section className="glass-panel rounded-3xl p-5 shadow-glass">
         <header className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">أحدث الملاحظات</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            أحدث الملاحظات
+          </h3>
           <NotebookPen className="size-5 text-primary/70" />
         </header>
         {notes.recent.length ? (
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
             {notes.recent.map((entry) => (
-              <li key={`${entry.trackerId}-${entry.date}-${entry.itemLabel}`} className="rounded-2xl border border-border/60 bg-white/5 p-3">
+              <li
+                key={`${entry.trackerId}-${entry.date}-${entry.itemLabel}`}
+                className="rounded-2xl border border-border/60 bg-white/5 p-3"
+              >
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span className="line-clamp-1 text-foreground font-medium">
                     {entry.trackerTitle} • {entry.itemLabel}
                   </span>
                   <span>{formatAppDate(entry.date, 'd MMM')}</span>
                 </div>
-                <p className="mt-2 text-sm text-foreground leading-relaxed">{entry.note}</p>
+                <p className="mt-2 text-sm text-foreground leading-relaxed">
+                  {entry.note}
+                </p>
               </li>
             ))}
           </ul>

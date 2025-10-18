@@ -22,8 +22,21 @@ type StatusSummary = {
   total: number;
   completionRate: number | null;
   activeTrackerCount: number;
-  topPerformers: Array<{ trackerId: string; title: string; rate: number; done: number }>;
-  needsAttention: Array<{ trackerId: string; title: string; missed: number; total: number }>;
+  topPerformers: Array<{
+    trackerId: string;
+    title: string;
+    rate: number;
+    done: number;
+    total: number;
+    items: Array<{ itemId: string; label: string; done: number; total: number }>;
+  }>;
+  needsAttention: Array<{
+    trackerId: string;
+    title: string;
+    missed: number;
+    total: number;
+    items: Array<{ itemId: string; label: string; missed: number; total: number }>;
+  }>;
   dailySeries: Array<{ date: string; done: number; partial: number; missed: number }>;
 };
 
@@ -164,24 +177,61 @@ const summarizeStatusTrackers = (
 ): StatusSummary => {
   const totals = { done: 0, partial: 0, missed: 0 };
   const daily = new Map<string, { done: number; partial: number; missed: number }>();
-  const trackerDone = new Map<string, { title: string; done: number; total: number; missed: number }>();
+  const trackerDone = new Map<
+    string,
+    {
+      title: string;
+      done: number;
+      missed: number;
+      total: number;
+      items: Map<string, { label: string; done: number; missed: number; total: number }>;
+    }
+  >();
 
   project.sections.forEach((section) => {
     if (!shouldIncludeSection(section, sectionFilter)) return;
     section.trackers.forEach((tracker) => {
       if (tracker.type !== "status") return;
       if (!shouldIncludeTracker(filters, tracker)) return;
-      const trackerTotals = { done: 0, total: 0, missed: 0 };
+      let summary = trackerDone.get(tracker.id);
+      if (!summary) {
+        summary = {
+          title: tracker.title,
+          done: 0,
+          missed: 0,
+          total: 0,
+          items: new Map(),
+        };
+        trackerDone.set(tracker.id, summary);
+      }
 
       Object.entries(tracker.cells ?? {}).forEach(([itemId, dayMap]) => {
         if (!dayMap) return;
+        const itemInfo = tracker.items.find((entry) => entry.id === itemId);
+        let itemSummary = summary!.items.get(itemId);
+        if (!itemSummary) {
+          itemSummary = {
+            label: itemInfo?.label ?? 'عنصر',
+            done: 0,
+            missed: 0,
+            total: 0,
+          };
+          summary!.items.set(itemId, itemSummary);
+        }
         Object.entries(dayMap).forEach(([dateKey, cell]) => {
           if (!cell) return;
           if (!isWithinRange(dateKey, range)) return;
           totals[cell.status] += 1;
-          trackerTotals.total += 1;
-          if (cell.status === "done") trackerTotals.done += 1;
-          if (cell.status === "missed") trackerTotals.missed += 1;
+          summary!.total += 1;
+          itemSummary!.total += 1;
+          if (cell.status === "done") {
+            summary!.done += 1;
+            itemSummary!.done += 1;
+          }
+          if (cell.status === "missed") {
+            summary!.missed += 1;
+            itemSummary!.missed += 1;
+          }
 
           if (!daily.has(dateKey)) {
             daily.set(dateKey, { done: 0, partial: 0, missed: 0 });
@@ -190,15 +240,6 @@ const summarizeStatusTrackers = (
           bucket[cell.status] += 1;
         });
       });
-
-      if (trackerTotals.total > 0) {
-        trackerDone.set(tracker.id, {
-          title: tracker.title,
-          done: trackerTotals.done,
-          total: trackerTotals.total,
-          missed: trackerTotals.missed,
-        });
-      }
     });
   });
 
@@ -207,23 +248,43 @@ const summarizeStatusTrackers = (
   const activeTrackerCount = trackerDone.size;
 
   const topPerformers = Array.from(trackerDone.entries())
+    .filter(([, info]) => info.total > 0)
     .map(([trackerId, info]) => ({
       trackerId,
       title: info.title,
       done: info.done,
-      rate: info.done / (info.total || 1),
+      total: info.total,
+      rate: info.done / info.total,
+      items: Array.from(info.items.entries())
+        .filter(([, item]) => item.total > 0)
+        .map(([itemId, item]) => ({
+          itemId,
+          label: item.label,
+          done: item.done,
+          total: item.total,
+        }))
+        .sort((a, b) => b.done / (b.total || 1) - a.done / (a.total || 1)),
     }))
     .sort((a, b) => b.rate - a.rate)
     .slice(0, MAX_LIST_ITEMS);
 
   const needsAttention = Array.from(trackerDone.entries())
+    .filter(([, info]) => info.missed > 0)
     .map(([trackerId, info]) => ({
       trackerId,
       title: info.title,
       missed: info.missed,
       total: info.total,
+      items: Array.from(info.items.entries())
+        .filter(([, item]) => item.missed > 0)
+        .map(([itemId, item]) => ({
+          itemId,
+          label: item.label,
+          missed: item.missed,
+          total: item.total,
+        }))
+        .sort((a, b) => b.missed - a.missed),
     }))
-    .filter((entry) => entry.missed > 0)
     .sort((a, b) => b.missed - a.missed)
     .slice(0, MAX_LIST_ITEMS);
 
