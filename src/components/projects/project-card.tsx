@@ -172,13 +172,7 @@ export function ProjectCard({
                     }`}
                   >
                     {trackersCount > 0
-                      ? `${
-                          trackersCount === 1
-                            ? 'جدول متابعة واحد'
-                            : trackersCount === 2
-                            ? 'جدولا متابعة'
-                            : trackersCount + ' جداول متابعة'
-                        } `
+                      ? trackersCount
                       : 'لم يتم إضافة جداول بعد'}
                   </dd>
                 </div>
