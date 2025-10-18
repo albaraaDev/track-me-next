@@ -22,6 +22,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
+import { useTheme } from 'next-themes';
 
 type ProjectStatsProps = {
   project: Project | undefined;
@@ -46,7 +47,8 @@ export function ProjectStats({ project, metrics }: ProjectStatsProps) {
       </section>
     );
   }
-
+  const { theme, systemTheme } = useTheme();
+  const currentTheme = theme === 'system' ? systemTheme : theme;
   const { status, notes, timeframe } = metrics;
   const hasStatusData = status.total > 0;
   const series = status.dailySeries;
@@ -68,7 +70,10 @@ export function ProjectStats({ project, metrics }: ProjectStatsProps) {
         <p className="font-semibold text-foreground">{label}</p>
         <ul className="mt-1 space-y-1 text-muted-foreground">
           {items.map((entry: any) => (
-            <li key={entry.dataKey} className="flex items-center justify-between gap-2">
+            <li
+              key={entry.dataKey}
+              className="flex items-center justify-between gap-2"
+            >
               <span>{entry.name}</span>
               <span className="text-foreground font-medium">{entry.value}</span>
             </li>
@@ -92,53 +97,101 @@ export function ProjectStats({ project, metrics }: ProjectStatsProps) {
             {timeframe.from ? (
               <span className="rounded-full bg-accent px-3 py-1 text-accent-foreground">
                 من {formatAppDate(timeframe.from, 'd MMM yyyy')} إلى{' '}
-                {timeframe.to ? formatAppDate(timeframe.to, 'd MMM yyyy') : 'اليوم'}
+                {timeframe.to
+                  ? formatAppDate(timeframe.to, 'd MMM yyyy')
+                  : 'اليوم'}
               </span>
             ) : null}
             <span className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground">
               إجمالي السجلات: {status.total}
             </span>
             <span className="rounded-full bg-emerald-100/60 px-3 py-1 text-emerald-700">
-              معدل الإنجاز: {status.completionRate !== null ? `${Math.round(status.completionRate * 100)}%` : '—'}
+              معدل الإنجاز:{' '}
+              {status.completionRate !== null
+                ? `${Math.round(status.completionRate * 100)}%`
+                : '—'}
             </span>
           </div>
         </div>
       </section>
-
       <section className="glass-panel rounded-3xl p-5 shadow-glass">
         <header className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">النشاط اليومي</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            النشاط اليومي
+          </h3>
           <CalendarRange className="size-5 text-primary" />
         </header>
         {hasStatusData && chartData.length ? (
           <div className="mt-6 h-72 w-full">
-            <ResponsiveContainer>
-              <BarChart data={chartData} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" />
-                <XAxis
-                  dataKey="date"
-                  interval={sliceFactor - 1}
-                  tick={{ fill: 'var(--foreground)', fontSize: 11 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  tick={{ fill: 'var(--foreground)', fontSize: 11 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <Tooltip content={<CustomTooltip />} cursor={{ opacity: 0.15 }} />
-                <Legend
-                  verticalAlign="top"
-                  align="right"
-                  wrapperStyle={{ fontSize: 11, color: 'var(--muted-foreground)' }}
-                />
-                <Bar dataKey="done" name="تم" stackId="status" fill="hsl(var(--status-done) / 0.85)" />
-                <Bar dataKey="partial" name="جزئي" stackId="status" fill="hsl(var(--status-partial) / 0.75)" />
-                <Bar dataKey="missed" name="لم يتم" stackId="status" fill="hsl(var(--status-missed) / 0.6)" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="mt-4 h-[250px] sm:h-[320px] w-full">
+              <ResponsiveContainer>
+                <BarChart
+                  data={chartData}
+                  barSize={20}
+                  barGap={6}
+                  margin={{ top: 10, right: 10, left: -10, bottom: 20 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-border/40"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="date"
+                    interval="preserveStartEnd"
+                    tick={{
+                      fill:
+                        currentTheme === 'dark'
+                          ? '#fff'
+                          : 'var(--muted-foreground)',
+                      fontSize: 10,
+                    }}
+                    tickMargin={8}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={{
+                      fill:
+                        currentTheme === 'dark'
+                          ? '#fff'
+                          : 'var(--muted-foreground)',
+                      fontSize: 10,
+                    }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={28}
+                  />
+                  <Tooltip
+                    content={<CustomTooltip />}
+                    cursor={{ opacity: 0.08 }}
+                    wrapperStyle={{ fontSize: 11 }}
+                  />
+                  <Bar
+                    dataKey="done"
+                    name="تم"
+                    stackId="status"
+                    radius={[0, 0, 0, 0]}
+                    fill="hsl(var(--status-done))"
+                  />
+                  <Bar
+                    dataKey="partial"
+                    name="جزئي"
+                    stackId="status"
+                    radius={[0, 0, 0, 0]}
+                    fill="hsl(var(--status-partial))"
+                  />
+                  <Bar
+                    dataKey="missed"
+                    name="لم يتم"
+                    stackId="status"
+                    radius={[0, 0, 0, 0]}
+                    fill="hsl(var(--status-missed))"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         ) : (
           <p className="mt-4 text-xs text-muted-foreground">
@@ -149,14 +202,16 @@ export function ProjectStats({ project, metrics }: ProjectStatsProps) {
 
       <section className="glass-panel rounded-3xl p-5 shadow-glass">
         <header className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">ملخص الملاحظات</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            ملخص الملاحظات
+          </h3>
           <Flame className="size-5 text-primary/80" />
         </header>
         {notes.totalEntries ? (
-          <div className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-3">
-            <div className="rounded-2xl border border-border/60 bg-white/5 p-3">
+          <div className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-3 items-start">
+            <div className="rounded-2xl border border-border/60 bg-white/5 p-3 flex items-center justify-between">
               <p>إجمالي الملاحظات</p>
-              <p className="mt-2 text-foreground text-2xl font-semibold">
+              <p className="text-foreground text-2xl font-semibold">
                 {notes.totalEntries}
               </p>
             </div>
@@ -164,7 +219,10 @@ export function ProjectStats({ project, metrics }: ProjectStatsProps) {
               <p>أحدث الملاحظات</p>
               <ul className="mt-3 space-y-2 text-xs">
                 {notes.recent.map((item) => (
-                  <li key={`${item.trackerId}-${item.date}-${item.itemLabel}`} className="rounded-2xl border border-border/60 bg-background/40 p-3">
+                  <li
+                    key={`${item.trackerId}-${item.date}-${item.itemLabel}`}
+                    className="rounded-2xl border border-border/60 bg-background/40 p-3"
+                  >
                     <div className="flex items-center justify-between text-muted-foreground">
                       <span className="text-foreground font-medium line-clamp-1">
                         {item.trackerTitle} • {item.itemLabel}

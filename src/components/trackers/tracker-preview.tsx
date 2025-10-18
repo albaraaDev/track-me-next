@@ -857,7 +857,7 @@ function StatusGrid({
                       );
                     }}
                     className={cn(
-                      'w-full rounded-3xl border border-border/60 bg-white/5 p-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition',
+                      'w-full rounded-3xl h-12 border border-border/60 bg-white/5 p-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition',
                       !showNoteField && 'cursor-not-allowed opacity-50'
                     )}
                     placeholder={
