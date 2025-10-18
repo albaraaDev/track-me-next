@@ -30,6 +30,8 @@ type ProjectStatsProps = {
 };
 
 const MAX_SERIES_LABELS = 12;
+const { theme, systemTheme } = useTheme();
+
 
 export function ProjectStats({ project, metrics }: ProjectStatsProps) {
   if (!project) {
@@ -47,7 +49,6 @@ export function ProjectStats({ project, metrics }: ProjectStatsProps) {
       </section>
     );
   }
-  const { theme, systemTheme } = useTheme();
   const currentTheme = theme === 'system' ? systemTheme : theme;
   const { status, notes, timeframe } = metrics;
   const hasStatusData = status.total > 0;
