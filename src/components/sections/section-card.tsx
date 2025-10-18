@@ -97,7 +97,13 @@ export function SectionCard({
               >
                 <Table2 className="size-3.5" />
                 {trackersCount > 0
-                  ? `${trackersCount} جدول`
+                  ? `${
+                      trackersCount === 1
+                        ? 'جدول متابعة واحد'
+                        : trackersCount === 2
+                        ? 'جدولا متابعة'
+                        : trackersCount + ' جداول متابعة'
+                    } `
                   : 'لا توجد جداول بعد'}
               </span>
               <DropdownMenu>

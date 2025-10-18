@@ -68,7 +68,13 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     <div className="flex items-center gap-2 rounded-2xl bg-primary/5 p-3 text-xs text-primary shrink-0">
                       <Table2 className="size-4" />
                       {trackerCount > 0
-                        ? `${trackerCount} جدول متابعة.`
+                        ? `${
+                            trackerCount === 1
+                              ? 'جدول متابعة واحد'
+                              : trackerCount === 2
+                              ? 'جدولا متابعة'
+                              : trackerCount + ' جداول متابعة'
+                          } `
                         : 'قم بإضافة الأقسام والجداول لبدء متابعة الإنجازات اليومية.'}
                     </div>
                   </div>
