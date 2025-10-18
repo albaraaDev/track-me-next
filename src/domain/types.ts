@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const trackerStatusValueSchema = z.enum(["done", "partial", "missed", "reset"]);
+export const trackerStatusValueSchema = z.enum(["done", "partial", "missed"]);
 export type TrackerStatus = z.infer<typeof trackerStatusValueSchema>;
 
 export const cadencePresetSchema = z.enum(["week", "two-weeks", "month", "custom"]);
@@ -119,7 +119,7 @@ export const appDataSchema = z.object({
 });
 export type AppData = z.infer<typeof appDataSchema>;
 
-export const APP_DATA_VERSION = 1;
+export const APP_DATA_VERSION = 2;
 
 export function createInitialProfile(): UserProfile {
   const now = new Date().toISOString();

@@ -36,7 +36,6 @@ html {
     --status-done: 148 69% 41%;
     --status-partial: 40 96% 55%;
     --status-missed: 0 84% 60%;
-    --status-reset: 215 20% 70%;
     --surface-glass: rgba(255, 255, 255, 0.72);
     --surface-muted: rgba(255, 255, 255, 0.5);
     --surface-border: rgba(255, 255, 255, 0.3);
@@ -74,7 +73,6 @@ html {
     --status-done: 149 65% 58%;
     --status-partial: 40 96% 62%;
     --status-missed: 0 74% 56%;
-    --status-reset: 215 18% 56%;
     --surface-glass: rgba(17, 24, 39, 0.75);
     --surface-muted: rgba(17, 24, 39, 0.55);
     --surface-border: rgba(148, 163, 184, 0.22);

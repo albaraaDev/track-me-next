@@ -141,7 +141,7 @@ function StatusTrackerPreview({
   sectionId: string;
 }) {
   const summary = React.useMemo(() => {
-    const counts = { done: 0, partial: 0, missed: 0, reset: 0 };
+    const counts = { done: 0, partial: 0, missed: 0 };
     const notes: string[] = [];
 
     Object.values(tracker.cells ?? {}).forEach((days) => {
@@ -231,8 +231,6 @@ function statusLabel(status: string) {
       return 'جزئي';
     case 'missed':
       return 'لم يتم';
-    case 'reset':
-      return 'مصفّر';
     default:
       return status;
   }
@@ -266,7 +264,6 @@ const statusColorMap: Record<string, string> = {
   done: 'bg-status-done/20 text-status-done border-status-done/50',
   partial: 'bg-status-partial/20 text-status-partial border-status-partial/50',
   missed: 'bg-status-missed/20 text-status-missed border-status-missed/50',
-  reset: 'bg-status-reset/20 text-status-reset border-status-reset/50',
 };
 
 function StatusGrid({
@@ -288,26 +285,36 @@ function StatusGrid({
       isoDate: string,
       cell?: StatusTracker['cells'][string][string]
     ) => {
-      const states: StatusTracker['cells'][string][string]['status'][] = [
+      const sequence: StatusTracker['cells'][string][string]['status'][] = [
         'done',
         'partial',
         'missed',
-        'reset',
       ];
-      const nextStatus = cell?.status
-        ? states[(states.indexOf(cell.status) + 1) % states.length]
-        : states[0];
-      const existingItemCells = { ...(tracker.cells?.[itemId] ?? {}) };
-      existingItemCells[isoDate] = {
-        status: nextStatus,
-        note: cell?.note,
-        updatedAt: new Date().toISOString(),
-      };
+
+      const currentIndex = cell ? sequence.indexOf(cell.status) : -1;
+      const nextIndex = currentIndex + 1;
+      const nextCells = { ...(tracker.cells ?? {}) };
+      const itemCells = { ...(nextCells[itemId] ?? {}) };
+
+      if (nextIndex >= sequence.length) {
+        delete itemCells[isoDate];
+      } else {
+        const nextStatus = sequence[nextIndex];
+        itemCells[isoDate] = {
+          status: nextStatus,
+          note: cell?.note,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+
+      if (Object.keys(itemCells).length === 0) {
+        delete nextCells[itemId];
+      } else {
+        nextCells[itemId] = itemCells;
+      }
+
       updateTracker(projectId, sectionId, tracker.id, {
-        cells: {
-          ...tracker.cells,
-          [itemId]: existingItemCells,
-        },
+        cells: nextCells,
       });
     },
     [projectId, sectionId, tracker.cells, tracker.id, updateTracker]
@@ -547,7 +554,7 @@ function NotesCell({
         )}
       >
         {note ? (
-          <span className="line-clamp-2 text-start">{note}</span>
+          <span className="line-clamp-1 text-start">{note}</span>
         ) : (
           'أضف ملاحظة'
         )}

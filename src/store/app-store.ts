@@ -21,6 +21,53 @@ import { createPersistStorage, STORAGE_KEY } from "@/lib/storage";
 
 const now = () => new Date().toISOString();
 
+const sanitizeLegacyStatusCells = (input: Partial<AppData>): Partial<AppData> => {
+  if (!input.projects) return input;
+  const projects = input.projects.map((project) => {
+    if (!project || !Array.isArray(project.sections)) return project;
+    return {
+      ...project,
+      sections: project.sections.map((section) => {
+        if (!section || !Array.isArray(section.trackers)) return section;
+        return {
+          ...section,
+          trackers: section.trackers.map((tracker) => {
+            if (!tracker || tracker.type !== "status" || !tracker.cells) return tracker;
+            const cells = tracker.cells as Record<
+              string,
+              Record<string, { status: string; note?: string; updatedAt: string }>
+            >;
+            const nextCells: typeof cells = {};
+            Object.entries(cells).forEach(([itemId, dayMap]) => {
+              if (!dayMap) return;
+              const nextDayMap: typeof dayMap = {};
+              Object.entries(dayMap).forEach(([dateKey, cell]) => {
+                if (!cell) return;
+                if (cell.status === "reset") {
+                  return;
+                }
+                nextDayMap[dateKey] = cell;
+              });
+              if (Object.keys(nextDayMap).length > 0) {
+                nextCells[itemId] = nextDayMap;
+              }
+            });
+            return {
+              ...tracker,
+              cells: nextCells,
+            };
+          }),
+        };
+      }),
+    };
+  });
+
+  return {
+    ...input,
+    projects,
+  };
+};
+
 type AppActions = {
   hydrate: (payload: AppData) => void;
   reset: () => void;
@@ -43,9 +90,10 @@ type AppActions = {
     payload: Partial<Tracker>,
   ) => void;
   removeTracker: (projectId: string, sectionId: string, trackerId: string) => void;
+  markHydrated: () => void;
 };
 
-export type AppStore = AppData & { actions: AppActions };
+export type AppStore = AppData & { actions: AppActions; hasHydrated: boolean };
 
 const initialState = createInitialAppData();
 
@@ -53,6 +101,7 @@ export const useAppStore = create<AppStore>()(
   persist(
     (set, get) => ({
       ...initialState,
+      hasHydrated: false,
       actions: {
         hydrate: (payload) => {
           const parsed = appDataSchema.safeParse(payload);
@@ -63,12 +112,14 @@ export const useAppStore = create<AppStore>()(
           set((state) => ({
             ...parsed.data,
             actions: state.actions,
+            hasHydrated: true,
           }));
         },
         reset: () =>
           set((state) => ({
             ...createInitialAppData(),
             actions: state.actions,
+            hasHydrated: true,
           })),
         setProfile: (input) =>
           set((state) => ({
@@ -242,6 +293,7 @@ export const useAppStore = create<AppStore>()(
               };
             }),
           })),
+        markHydrated: () => set(() => ({ hasHydrated: true })),
       },
     }),
     {
@@ -258,8 +310,9 @@ export const useAppStore = create<AppStore>()(
       }),
       migrate: (persistedState) => {
         const baseState = (persistedState ?? {}) as Partial<AppData>;
+        const upgraded = sanitizeLegacyStatusCells(baseState);
         const parsed = appDataSchema.safeParse({
-          ...baseState,
+          ...upgraded,
           version: APP_DATA_VERSION,
         });
         if (parsed.success) {
@@ -268,6 +321,7 @@ export const useAppStore = create<AppStore>()(
         console.warn("فشل في ترحيل نسخة البيانات، سيتم استخدام الإعدادات المبدئية.");
         return initialState;
       },
+      skipHydration: true,
     },
   ),
 );
