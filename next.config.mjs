@@ -16,4 +16,5 @@ export default withPWA({
   register: true,
   skipWaiting: true,
   runtimeCaching,
+  buildExcludes: [/app-build-manifest\.json$/],
 })(nextConfig);

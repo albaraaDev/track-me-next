@@ -7,11 +7,29 @@ import { cn } from "@/lib/utils";
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const isDark = theme === "system" ? resolvedTheme === "dark" : theme === "dark";
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark =
+    mounted && (theme === "system" ? resolvedTheme === "dark" : theme === "dark");
 
   const toggleTheme = React.useCallback(() => {
+    if (!mounted) return;
     setTheme(isDark ? "light" : "dark");
-  }, [isDark, setTheme]);
+  }, [isDark, mounted, setTheme]);
+
+  const icon = mounted ? (
+    isDark ? (
+      <Sun className="size-5" />
+    ) : (
+      <Moon className="size-5" />
+    )
+  ) : (
+    <Moon className="size-5 opacity-0" aria-hidden />
+  );
 
   return (
     <button
@@ -23,8 +41,9 @@ export function ThemeToggle({ className }: { className?: string }) {
         className,
       )}
       aria-label="تبديل النمط اللوني"
+      disabled={!mounted}
     >
-      {isDark ? <Sun className="size-5" /> : <Moon className="size-5" />}
+      {icon}
     </button>
   );
 }
