@@ -636,11 +636,7 @@ function StatusGrid({
 
     itemCells[statusEditor.iso] = {
       status: statusEditor.nextStatus,
-      note:
-        statusEditor.nextStatus === 'partial' ||
-        statusEditor.nextStatus === 'missed'
-          ? trimmed || undefined
-          : undefined,
+      note: trimmed || undefined,
       updatedAt: new Date().toISOString(),
     };
     nextCells[statusEditor.itemId] = itemCells;
@@ -667,7 +663,7 @@ function StatusGrid({
     {
       value: 'done',
       title: 'إنجاز كامل',
-      description: 'أُنجز العنصر كما خُطط له دون ملاحظات إضافية.',
+      description: 'أُنجز العنصر كما خُطط له؛ يمكنك توثيق تفاصيل إضافية.',
       accent: 'border-status-done/50 bg-status-done/10 text-status-done',
       icon: <Check className="size-5" />,
     },
@@ -696,15 +692,16 @@ function StatusGrid({
   ];
 
   const showNoteField =
-    statusEditor?.nextStatus === 'partial' ||
-    statusEditor?.nextStatus === 'missed';
+    statusEditor?.nextStatus !== null && statusEditor?.nextStatus !== undefined;
   const formattedDate = statusEditor
     ? formatAppDate(statusEditor.iso, 'd MMM yyyy')
     : null;
   const previewDate = notePreview
     ? formatAppDate(notePreview.iso, 'd MMM yyyy')
     : null;
-  const noteLength = statusEditor ? statusEditor.noteDraft.trim().length : 0;
+  const trimmedDraft = statusEditor ? statusEditor.noteDraft.trim() : '';
+  const trimmedCurrentNote = statusEditor?.currentNote?.trim() ?? '';
+  const noteLength = trimmedDraft.length;
   const currentStatusLabel = statusEditor?.currentStatus
     ? statusLabel(statusEditor.currentStatus)
     : 'بدون حالة';
@@ -712,20 +709,21 @@ function StatusGrid({
     statusEditor?.nextStatus !== null && statusEditor?.nextStatus !== undefined
       ? statusLabel(statusEditor.nextStatus)
       : 'إزالة الحالة';
+  const noteChanged =
+    !!statusEditor &&
+    statusEditor.nextStatus !== null &&
+    trimmedDraft !== trimmedCurrentNote;
   const statusChanged =
-    statusEditor?.nextStatus !== statusEditor?.currentStatus ||
-    statusEditor?.nextStatus === 'partial' ||
-    statusEditor?.nextStatus === 'missed';
+    statusEditor?.nextStatus !== statusEditor?.currentStatus || noteChanged;
 
   const handlePickStatus = React.useCallback(
     (value: StatusTracker['cells'][string][string]['status'] | null) => {
       setStatusEditor((prev) => {
         if (!prev) return prev;
-        const needsNote = value === 'partial' || value === 'missed';
         return {
           ...prev,
           nextStatus: value,
-          noteDraft: needsNote ? prev.noteDraft : '',
+          noteDraft: value === null ? '' : prev.noteDraft,
         };
       });
     },
@@ -779,9 +777,8 @@ function StatusGrid({
                     const isActive = tracker.activeWeekdays.includes(
                       date.getDay()
                     );
-                    const canPreview =
+                    const hasNote =
                       !!cell &&
-                      (cell.status === 'partial' || cell.status === 'missed') &&
                       typeof cell.note === 'string' &&
                       cell.note.trim().length > 0;
                     return (
@@ -797,9 +794,7 @@ function StatusGrid({
                             openEditor(item.id, iso);
                           }}
                           onPreview={
-                            canPreview
-                              ? () => openPreview(item.id, iso)
-                              : undefined
+                            hasNote ? () => openPreview(item.id, iso) : undefined
                           }
                         />
                       </td>
@@ -890,11 +885,6 @@ function StatusGrid({
                   <span className="rounded-full bg-status-done/10 px-3 py-1 text-center text-status-done text-xs">
                     الحالة الحالية: {currentStatusLabel}
                   </span>
-                  {!statusChanged ? (
-                    <span className="text-[11px] text-muted-foreground/80">
-                      لم يتم اختيار حالة جديدة بعد
-                    </span>
-                  ) : null}
                 </div>
                 <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
                   {statusCards.map((card) => {
@@ -979,7 +969,7 @@ function StatusGrid({
                       !showNoteField && 'cursor-not-allowed opacity-50'
                     )}
                     placeholder={
-                      'اكتب ما حدث اليوم، مثل سبب التعثر أو ما تم إنجازه.'
+                      'دوّن ما حدث اليوم، سواء تفاصيل النجاح أو ملاحظات للمستقبل.'
                     }
                   />
                 </div>
@@ -1337,7 +1327,6 @@ function StatusCell({ active, cell, onOpen, onPreview }: StatusCellProps) {
     !!onPreview &&
     active &&
     !!cell &&
-    (cell.status === 'partial' || cell.status === 'missed') &&
     typeof cell.note === 'string' &&
     cell.note.trim().length > 0;
 
