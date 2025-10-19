@@ -7,12 +7,12 @@ import {
   CalendarDays,
   Check,
   Edit,
+  EllipsisVertical,
   Eraser,
   GripVertical,
   Minus,
   NotebookPen,
   Table2,
-  Trash,
   Trash2,
   X,
 } from 'lucide-react';
@@ -26,6 +26,12 @@ import {
 import { cn } from '@/lib/utils';
 import { useAppActions } from '@/store/app-store';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { formatAppDate, parseAppDate, toAppDateString } from '@/lib/date';
 import { useToast } from '@/hooks/use-toast';
 import { TrackerEditSheet } from './tracker-edit-sheet';
@@ -384,6 +390,9 @@ function SortableTrackerItem({
     transition,
     isDragging,
   } = useSortable({ id: tracker.id });
+  const [isDescriptionOpen, setIsDescriptionOpen] = React.useState(false);
+  const description = tracker.description?.trim() ?? '';
+  const hasDescription = description.length > 0;
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -432,25 +441,45 @@ function SortableTrackerItem({
             </span>
           </div>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="rounded-full text-green-500 hover:bg-green-500/10 px-2"
-              onClick={onEdit}
-            >
-              <Edit />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="rounded-full text-destructive hover:bg-destructive/10 px-2"
-              onClick={onDelete}
-            >
-              <Trash2 />
-            </Button>
+          <div className="flex items-center justify-end gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="glass-panel-muted size-9 rounded-full border border-border/60 text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <EllipsisVertical className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="glass-panel rounded-2xl border border-border/50 p-1 text-right text-sm"
+              >
+                <DropdownMenuItem
+                  className="flex items-center gap-2 text-foreground"
+                  onSelect={() => setIsDescriptionOpen(true)}
+                >
+                  <NotebookPen className="size-4 text-primary" />
+                  عرض الوصف
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="flex items-center gap-2 text-foreground"
+                  onSelect={onEdit}
+                >
+                  <Edit className="size-4 text-green-500" />
+                  تعديل الجدول
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="flex items-center gap-2 text-destructive"
+                  onSelect={onDelete}
+                >
+                  <Trash2 className="size-4" />
+                  حذف الجدول
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </AccordionTrigger>
@@ -470,6 +499,31 @@ function SortableTrackerItem({
           />
         )}
       </AccordionContent>
+      <Dialog open={isDescriptionOpen} onOpenChange={setIsDescriptionOpen}>
+        <DialogContent className="glass-panel max-w-md rounded-3xl border border-border/70 text-right shadow-glow-soft">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-foreground">
+              وصف الجدول
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              {tracker.title}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-2xl border border-border/60 bg-background/70 p-4 text-sm leading-relaxed text-foreground">
+            {hasDescription ? description : 'لا يوجد وصف لهذا الجدول حالياً.'}
+          </div>
+          <DialogFooter className="flex justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              className="rounded-full"
+              onClick={() => setIsDescriptionOpen(false)}
+            >
+              إغلاق
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AccordionItem>
   );
 }
