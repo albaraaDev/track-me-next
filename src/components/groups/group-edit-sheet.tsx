@@ -34,7 +34,7 @@ const groupEditSchema = z.object({
     .max(400, 'الوصف طويل جداً')
     .optional()
     .or(z.literal('')),
-  trackerIds: z.array(z.string()).default([]),
+  trackerIds: z.array(z.string()),
 });
 
 type GroupEditValues = z.infer<typeof groupEditSchema>;
@@ -247,4 +247,3 @@ export function GroupEditSheet({
     </Sheet>
   );
 }
-
