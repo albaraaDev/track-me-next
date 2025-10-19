@@ -51,8 +51,8 @@ export function ProjectOverview({ project, metrics }: ProjectOverviewProps) {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 lg:grid-cols-2">
-        <header className="glass-panel rounded-3xl border border-border/60 p-5 shadow-glow-soft">
+      <div className="grid gap-4 lg:grid-cols-3">
+        <header className="glass-panel rounded-3xl border border-border/60 p-5 shadow-glow-soft lg:col-span-2">
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-semibold text-foreground">
