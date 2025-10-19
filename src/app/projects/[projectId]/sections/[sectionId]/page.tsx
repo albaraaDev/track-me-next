@@ -63,17 +63,24 @@ function GroupPanel({
   const description = group.description?.trim();
 
   return (
-    <div className="glass-panel rounded-3xl p-4 shadow-glass">
+    <div className="">
       <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 glass-panel rounded-3xl p-4 shadow-glass">
           <button
             type="button"
             onClick={() => setExpanded((prev) => !prev)}
             className="group flex flex-1 items-center gap-2 text-right justify-between"
           >
-            <span className="text-lg font-semibold text-foreground">
-              {group.title}
-            </span>
+            <div className="">
+              <h5 className="text-lg font-semibold text-foreground">
+                {group.title}
+              </h5>
+              {description ? (
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {description}
+                </p>
+              ) : null}
+            </div>
             <div className="flex gap-2 items-center">
               <div className="flex items-center gap-2 rounded-2xl bg-primary/5 px-3 py-2 text-xs text-primary shrink-0">
                 <Table2 className="size-4" />
@@ -121,12 +128,6 @@ function GroupPanel({
             </DropdownMenu>
           </div>
         </div>
-
-        {description ? (
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            {description}
-          </p>
-        ) : null}
 
         {expanded ? (
           <div className="mt-1">

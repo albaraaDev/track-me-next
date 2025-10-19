@@ -416,13 +416,13 @@ function SortableTrackerItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'rounded-2xl border border-border/50 bg-white/5 px-4 py-3 backdrop-blur transition',
+        'rounded-2xl border border-border/50 bg-white/5 p-2 backdrop-blur transition',
         isDragging ? 'opacity-80 shadow-glow-soft' : undefined
       )}
     >
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-1 items-start gap-3">
+          <div className="flex flex-1 items-center gap-3">
             <button
               type="button"
               ref={setActivatorNodeRef}
