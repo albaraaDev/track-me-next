@@ -30,6 +30,7 @@ export const metadata: Metadata = {
     title: "Track Me",
     statusBarStyle: "black-translucent",
   },
+  viewport: "width=device-width, initial-scale=1.0, viewport-fit=cover",
 };
 
 export const viewport: Viewport = {
