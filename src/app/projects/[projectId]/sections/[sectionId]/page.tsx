@@ -299,7 +299,7 @@ export default function SectionPage({ params }: SectionPageProps) {
     <AppShell
       header={
         <div className="flex flex-col gap-4">
-          <header className="glass-panel rounded-3xl p-6 shadow-glass">
+          <header className="glass-panel rounded-3xl p-3 shadow-glass">
             <div className="flex flex-col gap-5">
               <div className="flex items-start gap-4">
                 <Link
@@ -315,7 +315,7 @@ export default function SectionPage({ params }: SectionPageProps) {
                     </h1>
                     <div className="flex items-center gap-2 rounded-2xl bg-primary/5 p-3 text-xs text-primary">
                       <Table2 className="size-4" />
-                      {trackerCount > 0 ? `${trackerCount} جدول` : 'لا توجد جداول بعد'}
+                      {trackerCount > 0 ? `${trackerCount}` : 'لا توجد جداول بعد'}
                     </div>
                   </div>
                   <p className="text-sm leading-relaxed text-muted-foreground">

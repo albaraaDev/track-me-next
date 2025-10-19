@@ -34,6 +34,44 @@ const moveItem = <T,>(input: T[], fromIndex: number, toIndex: number): T[] => {
   return next;
 };
 
+const normalizeTrackerItems = (tracker: Tracker): Tracker => {
+  const allowed = new Set(tracker.activeWeekdays ?? []);
+  if (tracker.type === "status") {
+    const items = tracker.items.map((item) => {
+      const source = item.activeWeekdays && item.activeWeekdays.length > 0 ? item.activeWeekdays : tracker.activeWeekdays;
+      const normalized = source.filter((day) => allowed.has(day));
+      const finalWeekdays = normalized.length > 0 ? normalized : tracker.activeWeekdays;
+      return {
+        ...item,
+        activeWeekdays: finalWeekdays,
+      };
+    });
+    return {
+      ...tracker,
+      items,
+    };
+  }
+
+  const items = tracker.items.map((item) => {
+    const source = item.activeWeekdays && item.activeWeekdays.length > 0 ? item.activeWeekdays : tracker.activeWeekdays;
+    const normalized = source.filter((day) => allowed.has(day));
+    const finalWeekdays = normalized.length > 0 ? normalized : tracker.activeWeekdays;
+    return {
+      ...item,
+      activeWeekdays: finalWeekdays,
+    };
+  });
+  return {
+    ...tracker,
+    items,
+  };
+};
+
+const finalizeSection = (section: Section): Section => ({
+  ...section,
+  trackers: section.trackers.map((tracker) => normalizeTrackerItems(tracker)),
+});
+
 const detachTrackerFromGroups = (section: Section, trackerId: string) => {
   let changed = false;
   const groups = (section.groups ?? []).map((group) => {
@@ -77,14 +115,16 @@ const sanitizeLegacyStatusCells = (input: Partial<AppData>): Partial<AppData> =>
       ...project,
       sections: project.sections.map((section) => {
         if (!section || !Array.isArray(section.trackers)) {
-          return sectionSchema.parse({
+          const parsedSection = sectionSchema.parse({
             ...section,
             groups: section?.groups ?? [],
             defaultView: section?.defaultView ?? "trackers",
           });
+          return finalizeSection(parsedSection);
         }
         const nextTrackers = section.trackers.map((tracker) => {
-            if (!tracker || tracker.type !== "status" || !tracker.cells) return tracker;
+          if (!tracker) return tracker;
+          if (tracker.type === "status" && tracker.cells) {
             const cells = tracker.cells as Record<
               string,
               Record<string, { status: string; note?: string; updatedAt: string }>
@@ -104,17 +144,25 @@ const sanitizeLegacyStatusCells = (input: Partial<AppData>): Partial<AppData> =>
                 nextCells[itemId] = nextDayMap;
               }
             });
-            return trackerStatusSchema.parse({
+            const parsedTracker = trackerStatusSchema.parse({
               ...tracker,
               cells: nextCells,
-            });
-          });
-        return sectionSchema.parse({
+            }) as Tracker;
+            return normalizeTrackerItems(parsedTracker);
+          }
+          const parsedTracker = trackerSchema.safeParse(tracker);
+          if (parsedTracker.success) {
+            return normalizeTrackerItems(parsedTracker.data);
+          }
+          return tracker;
+        });
+        const parsedSection = sectionSchema.parse({
           ...section,
           trackers: nextTrackers,
           groups: section?.groups ?? [],
           defaultView: section?.defaultView ?? "trackers",
         });
+        return finalizeSection(parsedSection);
       }),
     };
   });
@@ -359,7 +407,7 @@ export const useAppStore = create<AppStore>()(
               });
               return {
                 ...project,
-                sections: [...project.sections, nextSection],
+                sections: [...project.sections, finalizeSection(nextSection)],
                 updatedAt: timestamp,
               };
             }),
@@ -399,11 +447,13 @@ export const useAppStore = create<AppStore>()(
                 ...project,
                 sections: project.sections.map((section) => {
                   if (section.id !== sectionId) return section;
-                  return sectionSchema.parse({
-                    ...section,
-                    ...payload,
-                    updatedAt: now(),
-                  });
+                  return finalizeSection(
+                    sectionSchema.parse({
+                      ...section,
+                      ...payload,
+                      updatedAt: now(),
+                    }),
+                  );
                 }),
                 updatedAt: now(),
               };
@@ -429,11 +479,13 @@ export const useAppStore = create<AppStore>()(
                 ...project,
                 sections: project.sections.map((section) => {
                   if (section.id !== sectionId) return section;
-                  return sectionSchema.parse({
-                    ...section,
-                    defaultView: sectionViewSchema.parse(view),
-                    updatedAt: timestamp,
-                  });
+                  return finalizeSection(
+                    sectionSchema.parse({
+                      ...section,
+                      defaultView: sectionViewSchema.parse(view),
+                      updatedAt: timestamp,
+                    }),
+                  );
                 }),
                 updatedAt: timestamp,
               };
@@ -454,11 +506,13 @@ export const useAppStore = create<AppStore>()(
                     createdAt: group.createdAt ?? timestamp,
                     updatedAt: timestamp,
                   });
-                  return sectionSchema.parse({
-                    ...section,
-                    groups: [...(section.groups ?? []), nextGroup],
-                    updatedAt: timestamp,
-                  });
+                  return finalizeSection(
+                    sectionSchema.parse({
+                      ...section,
+                      groups: [...(section.groups ?? []), nextGroup],
+                      updatedAt: timestamp,
+                    }),
+                  );
                 }),
                 updatedAt: now(),
               };
@@ -520,12 +574,14 @@ export const useAppStore = create<AppStore>()(
                     }
                     return tracker;
                   });
-                  return sectionSchema.parse({
-                    ...section,
-                    groups: nextGroups,
-                    trackers: nextTrackers,
-                    updatedAt: timestamp,
-                  });
+                  return finalizeSection(
+                    sectionSchema.parse({
+                      ...section,
+                      groups: nextGroups,
+                      trackers: nextTrackers,
+                      updatedAt: timestamp,
+                    }),
+                  );
                 }),
                 updatedAt: now(),
               };
@@ -544,12 +600,14 @@ export const useAppStore = create<AppStore>()(
                   if (!targetGroup) return section;
                   const trackerIdSet = new Set(targetGroup.trackerIds);
                   const timestamp = now();
-                  return sectionSchema.parse({
-                    ...section,
-                    groups: existingGroups.filter((group) => group.id !== groupId),
-                    trackers: section.trackers.filter((tracker) => tracker.groupId !== groupId && !trackerIdSet.has(tracker.id)),
-                    updatedAt: timestamp,
-                  });
+                  return finalizeSection(
+                    sectionSchema.parse({
+                      ...section,
+                      groups: existingGroups.filter((group) => group.id !== groupId),
+                      trackers: section.trackers.filter((tracker) => tracker.groupId !== groupId && !trackerIdSet.has(tracker.id)),
+                      updatedAt: timestamp,
+                    }),
+                  );
                 }),
                 updatedAt: now(),
               };
@@ -568,12 +626,13 @@ export const useAppStore = create<AppStore>()(
                     ? (section.groups ?? []).some((group) => group.id === tracker.groupId)
                     : false;
                   const targetGroupId = hasGroup ? tracker.groupId : null;
-                  const nextTracker = trackerSchema.parse({
+                  const parsedTracker = trackerSchema.parse({
                     ...tracker,
                     groupId: targetGroupId,
                     createdAt: tracker.createdAt ?? timestamp,
                     updatedAt: timestamp,
                   });
+                  const nextTracker = normalizeTrackerItems(parsedTracker);
                   let nextGroups = section.groups ?? [];
                   if (targetGroupId) {
                     nextGroups = attachTrackerToGroup(
@@ -582,12 +641,13 @@ export const useAppStore = create<AppStore>()(
                       targetGroupId,
                     );
                   }
-                  return sectionSchema.parse({
+                  const parsedSection = sectionSchema.parse({
                     ...section,
                     trackers: [...section.trackers, nextTracker],
                     groups: nextGroups,
                     updatedAt: timestamp,
                   });
+                  return finalizeSection(parsedSection);
                 }),
                 updatedAt: now(),
               };
@@ -627,19 +687,21 @@ export const useAppStore = create<AppStore>()(
                         );
                       }
                     }
-                    return trackerSchema.parse({
+                    const parsedTracker = trackerSchema.parse({
                       ...tracker,
                       ...payload,
                       groupId: desiredGroupId,
                       updatedAt: timestamp,
                     }) as Tracker;
+                    return normalizeTrackerItems(parsedTracker);
                   });
-                  return sectionSchema.parse({
+                  const parsedSection = sectionSchema.parse({
                     ...section,
                     trackers: nextTrackers,
                     groups: nextGroups,
                     updatedAt: timestamp,
                   });
+                  return finalizeSection(parsedSection);
                 }),
                 updatedAt: now(),
               };
@@ -682,12 +744,14 @@ export const useAppStore = create<AppStore>()(
                         updatedAt: timestamp,
                       } as Tracker;
                     });
-                    return sectionSchema.parse({
-                      ...section,
-                      groups: nextGroups,
-                      trackers: nextTrackers,
-                      updatedAt: timestamp,
-                    });
+                    return finalizeSection(
+                      sectionSchema.parse({
+                        ...section,
+                        groups: nextGroups,
+                        trackers: nextTrackers,
+                        updatedAt: timestamp,
+                      }),
+                    );
                   }
                   const ungrouped = section.trackers.filter((tracker) => !tracker.groupId);
                   const currentIndex = ungrouped.findIndex((tracker) => tracker.id === trackerId);
@@ -710,11 +774,13 @@ export const useAppStore = create<AppStore>()(
                     cursor += 1;
                     return nextTracker;
                   });
-                  return sectionSchema.parse({
-                    ...section,
-                    trackers: nextTrackers,
-                    updatedAt: timestamp,
-                  });
+                  return finalizeSection(
+                    sectionSchema.parse({
+                      ...section,
+                      trackers: nextTrackers,
+                      updatedAt: timestamp,
+                    }),
+                  );
                 }),
                 updatedAt: now(),
               };
@@ -730,12 +796,14 @@ export const useAppStore = create<AppStore>()(
                   if (section.id !== sectionId) return section;
                   const timestamp = now();
                   const { groups } = detachTrackerFromGroups(section, trackerId);
-                  return sectionSchema.parse({
-                    ...section,
-                    groups,
-                    trackers: section.trackers.filter((tracker) => tracker.id !== trackerId),
-                    updatedAt: timestamp,
-                  });
+                  return finalizeSection(
+                    sectionSchema.parse({
+                      ...section,
+                      groups,
+                      trackers: section.trackers.filter((tracker) => tracker.id !== trackerId),
+                      updatedAt: timestamp,
+                    }),
+                  );
                 }),
                 updatedAt: now(),
               };

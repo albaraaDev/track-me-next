@@ -8,6 +8,18 @@ export type CadencePreset = z.infer<typeof cadencePresetSchema>;
 
 export const trackerGroupIdSchema = z.string().nullable().optional();
 
+const trackerItemWeekdaysSchema = z
+  .array(z.number().int().min(0).max(6))
+  .optional()
+  .default([]);
+
+const trackerItemBaseSchema = z.object({
+  id: z.string(),
+  label: z.string().min(1),
+  createdAt: z.string(),
+  activeWeekdays: trackerItemWeekdaysSchema,
+});
+
 export const trackerBaseSchema = z.object({
   id: z.string(),
   title: z.string().min(1),
@@ -30,13 +42,7 @@ export const trackerStatusCellSchema = z.object({
 
 export const trackerStatusSchema = trackerBaseSchema.extend({
   type: z.literal("status"),
-  items: z.array(
-    z.object({
-      id: z.string(),
-      label: z.string().min(1),
-      createdAt: z.string(),
-    }),
-  ),
+  items: z.array(trackerItemBaseSchema),
   cells: z.record(z.string(), z.record(z.string(), trackerStatusCellSchema)).default({}),
 });
 
@@ -47,13 +53,7 @@ export const trackerNoteCellSchema = z.object({
 
 export const trackerNotesSchema = trackerBaseSchema.extend({
   type: z.literal("notes"),
-  items: z.array(
-    z.object({
-      id: z.string(),
-      label: z.string().min(1),
-      createdAt: z.string(),
-    }),
-  ),
+  items: z.array(trackerItemBaseSchema),
   cells: z.record(z.string(), z.record(z.string(), trackerNoteCellSchema)).default({}),
 });
 

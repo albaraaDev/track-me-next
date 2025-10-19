@@ -115,7 +115,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     <AppShell
       header={
         <div className="flex flex-col gap-4">
-          <header className="glass-panel rounded-3xl p-4 shadow-glass">
+          <header className="glass-panel rounded-3xl p-3 shadow-glass">
             <div className="flex flex-col gap-5">
               <div className="flex items-start gap-4">
                 <Link

@@ -306,8 +306,6 @@ function StatusTrackerPreview({
     return { counts, total, notes: notes.slice(0, 3) };
   }, [tracker.cells]);
 
-  const previewItems = tracker.items.slice(0, 3);
-  const sampleWeekdays = tracker.activeWeekdays.slice(0, 5);
   const dateRange = React.useMemo(
     () => buildDateRange(tracker.startDate, tracker.endDate),
     [tracker.startDate, tracker.endDate]
@@ -862,9 +860,11 @@ function StatusGrid({
                   {dateRange.map((date) => {
                     const iso = toAppDateString(date);
                     const cell = dayCells?.[iso];
-                    const isActive = tracker.activeWeekdays.includes(
-                      date.getDay()
-                    );
+                    const itemActiveDays =
+                      item.activeWeekdays && item.activeWeekdays.length > 0
+                        ? item.activeWeekdays
+                        : tracker.activeWeekdays;
+                    const isActive = itemActiveDays.includes(date.getDay());
                     const hasNote =
                       !!cell &&
                       typeof cell.note === 'string' &&
@@ -1202,9 +1202,11 @@ function NotesGrid({
                   {dateRange.map((date) => {
                     const iso = toAppDateString(date);
                     const note = cells?.[iso]?.note;
-                    const isActive = tracker.activeWeekdays.includes(
-                      date.getDay()
-                    );
+                    const itemActiveDays =
+                      item.activeWeekdays && item.activeWeekdays.length > 0
+                        ? item.activeWeekdays
+                        : tracker.activeWeekdays;
+                    const isActive = itemActiveDays.includes(date.getDay());
                     const cellState: NoteCellState = {
                       itemId: item.id,
                       itemLabel: item.label,

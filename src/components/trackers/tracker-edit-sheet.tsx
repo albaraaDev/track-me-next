@@ -36,6 +36,8 @@ import {
   trackerFormSchema,
   TrackerFormValues,
   weekdayLabels,
+  sortWeekdays,
+  arraysShallowEqual,
 } from './tracker-create-sheet';
 import { parseAppDate, toAppDateString } from '@/lib/date';
 
@@ -78,6 +80,7 @@ export function TrackerEditSheet({
       [projectId, sectionId]
     )
   );
+  const defaultTrackerActiveDays = sortWeekdays(tracker?.activeWeekdays ?? [0, 2, 4]);
 
   React.useEffect(() => {
     if (open && !tracker) {
@@ -99,12 +102,16 @@ export function TrackerEditSheet({
         : toAppDateString(new Date()),
       endDate: tracker?.endDate ?? '',
       cadence: tracker?.cadence ?? 'week',
-      activeWeekdays: tracker?.activeWeekdays ?? [0, 2, 4],
+      activeWeekdays: defaultTrackerActiveDays,
       items:
         tracker?.items.map((item) => ({
           id: item.id,
           label: item.label,
-        })) ?? [{ id: createId(), label: 'عنصر جديد' }],
+          activeWeekdays:
+            item.activeWeekdays && item.activeWeekdays.length > 0
+              ? sortWeekdays(item.activeWeekdays)
+              : [...defaultTrackerActiveDays],
+        })) ?? [{ id: createId(), label: 'عنصر جديد', activeWeekdays: [...defaultTrackerActiveDays] }],
       groupId: tracker?.groupId ?? null,
     },
   });
@@ -121,10 +128,14 @@ export function TrackerEditSheet({
       startDate: tracker.startDate,
       endDate: tracker.endDate ?? '',
       cadence: tracker.cadence,
-      activeWeekdays: tracker.activeWeekdays,
+      activeWeekdays: sortWeekdays(tracker.activeWeekdays),
       items: tracker.items.map((item) => ({
         id: item.id,
         label: item.label,
+        activeWeekdays:
+          item.activeWeekdays && item.activeWeekdays.length > 0
+            ? sortWeekdays(item.activeWeekdays)
+            : sortWeekdays(tracker.activeWeekdays),
       })),
       groupId: tracker.groupId ?? null,
     });
@@ -132,6 +143,8 @@ export function TrackerEditSheet({
 
   const startDate = form.watch('startDate');
   const cadence = form.watch('cadence');
+  const trackerActiveDays = form.watch('activeWeekdays');
+  const formItems = form.watch('items');
 
   React.useEffect(() => {
     if (!startDate) return;
@@ -149,24 +162,45 @@ export function TrackerEditSheet({
     form.setValue('endDate', toAppDateString(end), { shouldDirty: true });
   }, [cadence, startDate, form]);
 
+  React.useEffect(() => {
+    const allowed = sortWeekdays(form.getValues('activeWeekdays') ?? defaultTrackerActiveDays);
+    const currentItems = form.getValues('items');
+    let changed = false;
+    const normalizedItems = currentItems.map((item: TrackerFormValues['items'][number]) => {
+      const base = item.activeWeekdays && item.activeWeekdays.length > 0 ? sortWeekdays(item.activeWeekdays) : allowed;
+      const filtered = base.filter((day) => allowed.includes(day));
+      const nextActive = filtered.length > 0 ? sortWeekdays(filtered) : allowed;
+      if (!arraysShallowEqual(nextActive, sortWeekdays(item.activeWeekdays ?? []))) {
+        changed = true;
+        return { ...item, activeWeekdays: nextActive };
+      }
+      return item;
+    });
+    if (changed) {
+      form.setValue('items', normalizedItems, { shouldDirty: true });
+    }
+  }, [form, trackerActiveDays, defaultTrackerActiveDays]);
+
   const updateItemLabel = React.useCallback(
     (id: string, label: string) => {
+      const items = form.getValues('items');
       form.setValue(
         'items',
-        form
-          .getValues('items')
-          .map((item) => (item.id === id ? { ...item, label } : item))
+        items.map((item: TrackerFormValues['items'][number]) =>
+          item.id === id ? { ...item, label } : item,
+        ),
       );
     },
-    [form]
+    [form, defaultTrackerActiveDays]
   );
 
   const addItem = React.useCallback(() => {
+    const allowed = sortWeekdays(form.getValues('activeWeekdays') ?? defaultTrackerActiveDays);
     form.setValue('items', [
       ...form.getValues('items'),
-      { id: createId(), label: '' },
+      { id: createId(), label: '', activeWeekdays: allowed },
     ]);
-  }, [form]);
+  }, [form, defaultTrackerActiveDays]);
 
   const removeItem = React.useCallback(
     (id: string) => {
@@ -177,19 +211,52 @@ export function TrackerEditSheet({
         items.filter((item) => item.id !== id)
       );
     },
-    [form]
+    [form, defaultTrackerActiveDays]
   );
 
   const toggleWeekday = React.useCallback(
     (day: number) => {
-      const selected = new Set(form.getValues('activeWeekdays'));
+      const selected = new Set(form.getValues('activeWeekdays') ?? defaultTrackerActiveDays);
       if (selected.has(day)) {
         selected.delete(day);
       } else {
         selected.add(day);
       }
-      const result = Array.from(selected).sort((a, b) => a - b);
+      const result = sortWeekdays(Array.from(selected));
       form.setValue('activeWeekdays', result.length ? result : [day]);
+    },
+    [form]
+  );
+
+  const toggleItemWeekday = React.useCallback(
+    (itemId: string, day: number) => {
+      const allowed = sortWeekdays(form.getValues('activeWeekdays') ?? defaultTrackerActiveDays);
+      if (!allowed.includes(day)) return;
+      const items = form.getValues('items');
+      let changed = false;
+      const nextItems = items.map((item: TrackerFormValues['items'][number]) => {
+        if (item.id !== itemId) return item;
+        const current = new Set(
+          item.activeWeekdays && item.activeWeekdays.length > 0 ? item.activeWeekdays : allowed,
+        );
+        if (current.has(day)) {
+          current.delete(day);
+        } else {
+          current.add(day);
+        }
+        const normalized = sortWeekdays(
+          Array.from(current).filter((value) => allowed.includes(value)),
+        );
+        const nextActive = normalized.length > 0 ? normalized : allowed;
+        if (!arraysShallowEqual(nextActive, sortWeekdays(item.activeWeekdays ?? []))) {
+          changed = true;
+          return { ...item, activeWeekdays: nextActive };
+        }
+        return item;
+      });
+      if (changed) {
+        form.setValue('items', nextItems, { shouldDirty: true });
+      }
     },
     [form]
   );
@@ -209,6 +276,13 @@ export function TrackerEditSheet({
       activeWeekdays: values.activeWeekdays,
       groupId: values.groupId ?? null,
     };
+    const allowedSet = new Set(values.activeWeekdays);
+    const resolveItemWeekdays = (input: number[] | undefined) => {
+      const base = input && input.length > 0 ? input : values.activeWeekdays;
+      const filtered = base.filter((day) => allowedSet.has(day));
+      const normalized = sortWeekdays(filtered.length > 0 ? filtered : values.activeWeekdays);
+      return normalized;
+    };
 
     const nextItems = values.items.map((item) => {
       const existing = tracker.items.find((entry) => entry.id === item.id);
@@ -216,6 +290,7 @@ export function TrackerEditSheet({
         id: item.id || createId(),
         label: item.label.trim(),
         createdAt: existing?.createdAt ?? timestamp,
+        activeWeekdays: resolveItemWeekdays(item.activeWeekdays),
       };
     });
 
@@ -480,26 +555,54 @@ export function TrackerEditSheet({
                   </Button>
                 </div>
                 <div className="space-y-2">
-                  {form.watch('items').map((item, index) => (
-                    <div key={item.id} className="flex items-center gap-2">
-                      <Input
-                        value={item.label}
-                        placeholder={`عنصر #${index + 1}`}
-                        onChange={(event) =>
-                          updateItemLabel(item.id, event.target.value)
-                        }
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="rounded-full border border-border/50"
-                        onClick={() => removeItem(item.id)}
+                  {form.watch('items').map((item, index) => {
+                    const itemDays = sortWeekdays(item.activeWeekdays ?? trackerActiveDays);
+                    return (
+                      <div
+                        key={item.id}
+                        className="space-y-3 rounded-2xl border border-border/60 bg-white/5 p-3"
                       >
-                        ✕
-                      </Button>
-                    </div>
-                  ))}
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={item.label}
+                            placeholder={`عنصر #${index + 1}`}
+                            onChange={(event) =>
+                              updateItemLabel(item.id, event.target.value)
+                            }
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="rounded-full border border-border/50"
+                            onClick={() => removeItem(item.id)}
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {sortWeekdays(trackerActiveDays).map((day) => {
+                            const selected = itemDays.includes(day);
+                            return (
+                              <button
+                                key={`${item.id}-${day}`}
+                                type="button"
+                                onClick={() => toggleItemWeekday(item.id, day)}
+                                className={cn(
+                                  'rounded-full border px-3 py-1 text-xs transition',
+                                  selected
+                                    ? 'border-primary bg-primary/15 text-primary shadow-glow-soft'
+                                    : 'border-border/60 bg-white/5 text-muted-foreground hover:bg-white/10'
+                                )}
+                              >
+                                {weekdayLabels[day]}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
