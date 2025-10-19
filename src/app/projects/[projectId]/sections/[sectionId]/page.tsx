@@ -6,9 +6,11 @@ import {
   ArrowRight,
   CalendarDays,
   ChevronDown,
+  Edit,
   EllipsisVertical,
   PlusCircle,
   Table2,
+  Trash2,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { useAppActions, useAppStore } from '@/store/app-store';
@@ -67,35 +69,28 @@ function GroupPanel({
           <button
             type="button"
             onClick={() => setExpanded((prev) => !prev)}
-            className="group flex flex-1 items-center gap-2 text-right"
+            className="group flex flex-1 items-center gap-2 text-right justify-between"
           >
             <span className="text-lg font-semibold text-foreground">
               {group.title}
             </span>
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">
-              {trackerCount > 0 ? `${trackerCount} جدول` : 'لا جداول بعد'}
-            </span>
-            <span className="ms-auto inline-flex size-6 items-center justify-center rounded-full border border-border/40">
-              <ChevronDown
-                className={cn(
-                  'size-4 text-muted-foreground transition-transform duration-200 ease-out',
-                  expanded ? 'rotate-180' : 'rotate-0'
-                )}
-              />
-            </span>
+            <div className="flex gap-2 items-center">
+              <div className="flex items-center gap-2 rounded-2xl bg-primary/5 px-3 py-2 text-xs text-primary shrink-0">
+                <Table2 className="size-4" />
+                {trackerCount > 0 ? trackerCount : 'لا توجد جداول بعد'}
+              </div>
+              <span className="ms-auto inline-flex size-6 items-center justify-center">
+                <ChevronDown
+                  className={cn(
+                    'size-4 text-muted-foreground transition-transform duration-200 ease-out',
+                    expanded ? 'rotate-180' : 'rotate-0'
+                  )}
+                />
+              </span>
+            </div>
           </button>
 
           <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="rounded-full border border-border/60 text-xs"
-              onClick={() => onAddTracker(group.id)}
-            >
-              <PlusCircle className="ms-1 size-4" />
-              إضافة جدول
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -110,13 +105,16 @@ function GroupPanel({
                 align="end"
                 className="glass-panel rounded-2xl border border-border/50 p-1 text-right text-sm"
               >
+                <DropdownMenuItem onSelect={() => onAddTracker(group.id)}>
+                  <PlusCircle className="text-green-500" />
+                  إضافة جدول
+                </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => onEdit(group.id)}>
+                  <Edit className="text-blue-500" />
                   تعديل المجموعة
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onSelect={() => onDelete(group.id)}
-                >
+                <DropdownMenuItem onSelect={() => onDelete(group.id)}>
+                  <Trash2 className="text-red-500" />
                   حذف المجموعة
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -154,7 +152,9 @@ export default function SectionPage({ params }: SectionPageProps) {
       [params.projectId]
     )
   );
-  const section = project?.sections.find((item) => item.id === params.sectionId);
+  const section = project?.sections.find(
+    (item) => item.id === params.sectionId
+  );
   const trackerCount = section?.trackers.length ?? 0;
 
   const hasHydrated = useAppStore((state) => state.hasHydrated);
@@ -171,11 +171,17 @@ export default function SectionPage({ params }: SectionPageProps) {
   }, [section?.defaultView]);
 
   const [isTrackerSheetOpen, setIsTrackerSheetOpen] = React.useState(false);
-  const [trackerSheetGroupId, setTrackerSheetGroupId] = React.useState<string | null>(null);
+  const [trackerSheetGroupId, setTrackerSheetGroupId] = React.useState<
+    string | null
+  >(null);
   const [isGroupCreateOpen, setIsGroupCreateOpen] = React.useState(false);
-  const [editingGroupId, setEditingGroupId] = React.useState<string | null>(null);
+  const [editingGroupId, setEditingGroupId] = React.useState<string | null>(
+    null
+  );
   const [isGroupEditOpen, setIsGroupEditOpen] = React.useState(false);
-  const [deletingGroupId, setDeletingGroupId] = React.useState<string | null>(null);
+  const [deletingGroupId, setDeletingGroupId] = React.useState<string | null>(
+    null
+  );
   const [isGroupDeleteOpen, setIsGroupDeleteOpen] = React.useState(false);
 
   const formatDate = React.useCallback(
@@ -281,19 +287,25 @@ export default function SectionPage({ params }: SectionPageProps) {
     return (
       <AppShell>
         <section className="glass-panel rounded-3xl p-6 text-center shadow-glass">
-          <h1 className="text-xl font-semibold text-foreground">لم يتم العثور على هذا القسم</h1>
+          <h1 className="text-xl font-semibold text-foreground">
+            لم يتم العثور على هذا القسم
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             تحقّق من الرابط أو عد إلى صفحة المشروع الرئيسية.
           </p>
           <Button asChild className="mt-4 rounded-full">
-            <Link href={`/projects/${params.projectId}`}>العودة إلى المشروع</Link>
+            <Link href={`/projects/${params.projectId}`}>
+              العودة إلى المشروع
+            </Link>
           </Button>
         </section>
       </AppShell>
     );
   }
 
-  const deletingGroup = section.groups.find((item) => item.id === deletingGroupId);
+  const deletingGroup = section.groups.find(
+    (item) => item.id === deletingGroupId
+  );
 
   return (
     <AppShell
@@ -313,9 +325,11 @@ export default function SectionPage({ params }: SectionPageProps) {
                     <h1 className="text-2xl font-semibold text-foreground">
                       {section.name}
                     </h1>
-                    <div className="flex items-center gap-2 rounded-2xl bg-primary/5 p-3 text-xs text-primary">
+                    <div className="flex items-center gap-2 rounded-2xl bg-primary/5 px-3 py-2 text-xs text-primary">
                       <Table2 className="size-4" />
-                      {trackerCount > 0 ? `${trackerCount}` : 'لا توجد جداول بعد'}
+                      {trackerCount > 0
+                        ? `${trackerCount}`
+                        : 'لا توجد جداول بعد'}
                     </div>
                   </div>
                   <p className="text-sm leading-relaxed text-muted-foreground">
@@ -331,7 +345,9 @@ export default function SectionPage({ params }: SectionPageProps) {
                   <CalendarDays className="size-4 text-primary" />
                   <div>
                     <p>تاريخ البداية</p>
-                    <p className="text-foreground">{formatDate(section.startDate)}</p>
+                    <p className="text-foreground">
+                      {formatDate(section.startDate)}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 rounded-2xl bg-gray-100 p-3 dark:bg-white/5">
@@ -419,7 +435,8 @@ export default function SectionPage({ params }: SectionPageProps) {
                   لا توجد جداول غير مصنفة حالياً
                 </h3>
                 <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                  يمكنك إنشاء جدول جديد أو نقل الجداول الموجودة إلى خارج المجموعات من خلال التعديل.
+                  يمكنك إنشاء جدول جديد أو نقل الجداول الموجودة إلى خارج
+                  المجموعات من خلال التعديل.
                 </p>
               </div>
             )}
@@ -449,9 +466,12 @@ export default function SectionPage({ params }: SectionPageProps) {
             ) : (
               <div className="glass-panel rounded-3xl p-6 text-center shadow-glass">
                 <Table2 className="mx-auto size-10 text-primary" />
-                <h3 className="mt-3 text-lg font-semibold">لم يتم إنشاء مجموعات بعد</h3>
+                <h3 className="mt-3 text-lg font-semibold">
+                  لم يتم إنشاء مجموعات بعد
+                </h3>
                 <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                  نظّم جداولك في مجموعات متخصصة لتقريب المهام المتشابهة أو العادات ذات الصلة.
+                  نظّم جداولك في مجموعات متخصصة لتقريب المهام المتشابهة أو
+                  العادات ذات الصلة.
                 </p>
               </div>
             )}

@@ -117,7 +117,9 @@ export function TrackerPreview({
       const { active, over } = event;
       if (!over || active.id === over.id) return;
 
-      const targetIndex = trackers.findIndex((tracker) => tracker.id === over.id);
+      const targetIndex = trackers.findIndex(
+        (tracker) => tracker.id === over.id
+      );
       if (targetIndex < 0) return;
       reorderTrackers(projectId, sectionId, active.id as string, targetIndex, {
         groupId: groupId ?? null,
@@ -450,7 +452,11 @@ function SortableTrackerItem({
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   <span>{formatDate(tracker.startDate)}</span>
                   <span>⇠</span>
-                  <span>{tracker.endDate ? formatDate(tracker.endDate) : 'متابعة مفتوحة'}</span>
+                  <span>
+                    {tracker.endDate
+                      ? formatDate(tracker.endDate)
+                      : 'متابعة مفتوحة'}
+                  </span>
                 </span>
               </div>
               <ChevronDown
@@ -482,17 +488,22 @@ function SortableTrackerItem({
                     className="flex items-center gap-2 text-foreground"
                     onSelect={() => onRequestUngroup?.(tracker.id)}
                   >
+                    <X className="text-orange-500" />
                     إزالة من المجموعة
                   </DropdownMenuItem>
                 ) : null}
-                <DropdownMenuItem
-                  className="flex items-center gap-2 text-foreground"
-                  disabled={!hasDescription}
-                  onSelect={() => hasDescription && setIsDescriptionOpen(true)}
-                >
-                  <NotebookPen className="size-4 text-primary" />
-                  عرض الوصف
-                </DropdownMenuItem>
+                {hasDescription && (
+                  <DropdownMenuItem
+                    className="flex items-center gap-2 text-foreground"
+                    disabled={!hasDescription}
+                    onSelect={() =>
+                      hasDescription && setIsDescriptionOpen(true)
+                    }
+                  >
+                    <NotebookPen className="size-4 text-primary" />
+                    عرض الوصف
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   className="flex items-center gap-2 text-foreground"
                   onSelect={onEdit}
@@ -501,10 +512,10 @@ function SortableTrackerItem({
                   تعديل الجدول
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className="flex items-center gap-2 text-destructive"
+                  className="flex items-center gap-2"
                   onSelect={onDelete}
                 >
-                  <Trash2 className="size-4" />
+                  <Trash2 className="size-4 text-destructive" />
                   حذف الجدول
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -514,7 +525,6 @@ function SortableTrackerItem({
 
         {isExpanded ? (
           <div className="space-y-4 border-t border-border/40 pt-3">
-            <TrackerMeta tracker={tracker} />
             {tracker.type === 'status' ? (
               <StatusTrackerPreview
                 tracker={tracker as StatusTracker}
@@ -540,6 +550,7 @@ function SortableTrackerItem({
             <DialogDescription className="text-sm text-muted-foreground">
               {tracker.title}
             </DialogDescription>
+            <TrackerMeta tracker={tracker} />
           </DialogHeader>
           <div className="rounded-2xl border border-border/60 bg-background/70 p-4 text-sm leading-relaxed text-foreground">
             {hasDescription ? description : 'لا يوجد وصف لهذا الجدول حالياً.'}
@@ -882,7 +893,9 @@ function StatusGrid({
                             openEditor(item.id, iso);
                           }}
                           onPreview={
-                            hasNote ? () => openPreview(item.id, iso) : undefined
+                            hasNote
+                              ? () => openPreview(item.id, iso)
+                              : undefined
                           }
                         />
                       </td>

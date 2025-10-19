@@ -130,7 +130,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       {project?.name ?? 'مشروع غير معروف'}
                     </h1>
                     <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2 rounded-2xl bg-primary/5 p-3 text-xs text-primary shrink-0">
+                      <div className="flex items-center gap-2 rounded-2xl bg-primary/5 px-3 py-2 text-xs text-primary shrink-0">
                         <Table2 className="size-4" />
                         {trackerCount > 0 ? trackerCount : 'لا توجد جداول بعد'}
                       </div>
