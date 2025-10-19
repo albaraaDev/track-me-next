@@ -53,9 +53,7 @@ export const sortWeekdays = (days: number[]): number[] =>
 export const arraysShallowEqual = (a: number[], b: number[]): boolean =>
   a.length === b.length && a.every((value, index) => value === b[index]);
 
-const itemActiveWeekdaysSchema = z
-  .array(z.number().min(0).max(6))
-  .default([]);
+const itemActiveWeekdaysSchema = z.array(z.number().min(0).max(6));
 
 export const trackerFormSchema = z.object({
   type: z.enum(['status', 'notes']),
