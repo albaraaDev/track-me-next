@@ -1070,7 +1070,7 @@ function StatusGrid({
                       !showNoteField && 'cursor-not-allowed opacity-50'
                     )}
                     placeholder={
-                      'دوّن ما حدث اليوم، سواء تفاصيل النجاح أو ملاحظات للمستقبل.'
+                      'دوّن ما حدث اليوم...'
                     }
                   />
                 </div>
