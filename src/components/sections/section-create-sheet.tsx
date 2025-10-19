@@ -98,6 +98,8 @@ export function SectionCreateSheet({ projectId, open, onOpenChange }: SectionCre
       startDate: values.startDate,
       endDate: values.endDate ? values.endDate : null,
       trackers: [],
+      groups: [],
+      defaultView: "trackers",
       createdAt: timestamp,
       updatedAt: timestamp,
     });
