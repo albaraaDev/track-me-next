@@ -88,19 +88,43 @@ html {
   body {
     @apply bg-background text-foreground min-h-screen;
     background-color: hsl(var(--background));
-    background-image: 
-      radial-gradient(1200px at 10% 10%, rgba(59, 130, 246, 0.18), transparent 60%),
-      radial-gradient(1000px at 90% 0%, rgba(244, 114, 182, 0.15), transparent 55%),
+    background-image: radial-gradient(
+        1200px at 10% 10%,
+        rgba(59, 130, 246, 0.18),
+        transparent 60%
+      ),
+      radial-gradient(
+        1000px at 90% 0%,
+        rgba(244, 114, 182, 0.15),
+        transparent 55%
+      ),
       var(--background-veil);
     background-attachment: fixed;
   }
 
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  main,
+  .page,
+  .wrapper {
+    min-height: 100%;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
   body::before {
-    content: "";
+    content: '';
     position: fixed;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(900px at 50% 0%, rgba(255, 255, 255, 0.35), transparent 60%);
+    background: radial-gradient(
+      900px at 50% 0%,
+      rgba(255, 255, 255, 0.35),
+      transparent 60%
+    );
     mix-blend-mode: screen;
     opacity: 0.35;
     z-index: -1;
@@ -126,11 +150,21 @@ html {
   }
 
   .glass-highlight {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.1));
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.45),
+      rgba(255, 255, 255, 0.1)
+    );
     border: 1px solid rgba(255, 255, 255, 0.3);
   }
 
   .mask-edge {
-    mask-image: linear-gradient(180deg, transparent, black 10%, black 90%, transparent);
+    mask-image: linear-gradient(
+      180deg,
+      transparent,
+      black 10%,
+      black 90%,
+      transparent
+    );
   }
 }
