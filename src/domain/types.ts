@@ -6,6 +6,8 @@ export type TrackerStatus = z.infer<typeof trackerStatusValueSchema>;
 export const cadencePresetSchema = z.enum(["week", "two-weeks", "month", "custom"]);
 export type CadencePreset = z.infer<typeof cadencePresetSchema>;
 
+export const trackerGroupIdSchema = z.string().nullable().optional();
+
 export const trackerBaseSchema = z.object({
   id: z.string(),
   title: z.string().min(1),
@@ -17,6 +19,7 @@ export const trackerBaseSchema = z.object({
   activeWeekdays: z.array(z.number().int().min(0).max(6)).min(1),
   createdAt: z.string(),
   updatedAt: z.string(),
+  groupId: trackerGroupIdSchema,
 });
 
 export const trackerStatusCellSchema = z.object({
@@ -57,6 +60,19 @@ export const trackerNotesSchema = trackerBaseSchema.extend({
 export const trackerSchema = z.discriminatedUnion("type", [trackerStatusSchema, trackerNotesSchema]);
 export type Tracker = z.infer<typeof trackerSchema>;
 
+export const groupSchema = z.object({
+  id: z.string(),
+  title: z.string().min(1),
+  description: z.string().optional().default(""),
+  trackerIds: z.array(z.string()).default([]),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type Group = z.infer<typeof groupSchema>;
+
+export const sectionViewSchema = z.enum(["groups", "trackers"]);
+export type SectionView = z.infer<typeof sectionViewSchema>;
+
 export const sectionSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
@@ -65,6 +81,8 @@ export const sectionSchema = z.object({
   startDate: z.string(),
   endDate: z.string().nullable().optional(),
   trackers: z.array(trackerSchema),
+  groups: z.array(groupSchema).default([]),
+  defaultView: sectionViewSchema.default("trackers"),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -129,7 +147,7 @@ export const appDataSchema = z.object({
 });
 export type AppData = z.infer<typeof appDataSchema>;
 
-export const APP_DATA_VERSION = 2;
+export const APP_DATA_VERSION = 3;
 
 export function createInitialProfile(): UserProfile {
   const now = new Date().toISOString();

@@ -6,15 +6,19 @@ import {
   APP_DATA_VERSION,
   AppData,
   FilterState,
+  Group,
   Project,
   Section,
+  SectionView,
   Tracker,
   trackerStatusSchema,
   appDataSchema,
   createInitialAppData,
   filterStateSchema,
+  groupSchema,
   projectSchema,
   sectionSchema,
+  sectionViewSchema,
   trackerSchema,
   userProfileSchema,
 } from "@/domain/types";
@@ -30,6 +34,41 @@ const moveItem = <T,>(input: T[], fromIndex: number, toIndex: number): T[] => {
   return next;
 };
 
+const detachTrackerFromGroups = (section: Section, trackerId: string) => {
+  let changed = false;
+  const groups = (section.groups ?? []).map((group) => {
+    if (!group.trackerIds.includes(trackerId)) {
+      return group;
+    }
+    changed = true;
+    return {
+      ...group,
+      trackerIds: group.trackerIds.filter((id) => id !== trackerId),
+      updatedAt: now(),
+    };
+  });
+  return { groups, changed };
+};
+
+const attachTrackerToGroup = (section: Section, trackerId: string, groupId: string | null | undefined) => {
+  if (!groupId) {
+    return section.groups ?? [];
+  }
+  return (section.groups ?? []).map((group) => {
+    if (group.id !== groupId) {
+      return group;
+    }
+    if (group.trackerIds.includes(trackerId)) {
+      return group;
+    }
+    return {
+      ...group,
+      trackerIds: [...group.trackerIds, trackerId],
+      updatedAt: now(),
+    };
+  });
+};
+
 const sanitizeLegacyStatusCells = (input: Partial<AppData>): Partial<AppData> => {
   if (!input.projects) return input;
   const projects = input.projects.map((project) => {
@@ -37,10 +76,14 @@ const sanitizeLegacyStatusCells = (input: Partial<AppData>): Partial<AppData> =>
     return {
       ...project,
       sections: project.sections.map((section) => {
-        if (!section || !Array.isArray(section.trackers)) return section;
-        return {
-          ...section,
-          trackers: section.trackers.map((tracker) => {
+        if (!section || !Array.isArray(section.trackers)) {
+          return sectionSchema.parse({
+            ...section,
+            groups: section?.groups ?? [],
+            defaultView: section?.defaultView ?? "trackers",
+          });
+        }
+        const nextTrackers = section.trackers.map((tracker) => {
             if (!tracker || tracker.type !== "status" || !tracker.cells) return tracker;
             const cells = tracker.cells as Record<
               string,
@@ -65,8 +108,13 @@ const sanitizeLegacyStatusCells = (input: Partial<AppData>): Partial<AppData> =>
               ...tracker,
               cells: nextCells,
             });
-          }),
-        };
+          });
+        return sectionSchema.parse({
+          ...section,
+          trackers: nextTrackers,
+          groups: section?.groups ?? [],
+          defaultView: section?.defaultView ?? "trackers",
+        });
       }),
     };
   });
@@ -98,12 +146,22 @@ type AppActions = {
   reorderSections: (projectId: string, sectionId: string, targetIndex: number) => void;
   updateSection: (projectId: string, sectionId: string, payload: Partial<Section>) => void;
   removeSection: (projectId: string, sectionId: string) => void;
+  setSectionDefaultView: (projectId: string, sectionId: string, view: SectionView) => void;
+  addGroup: (projectId: string, sectionId: string, group: Group) => void;
+  updateGroup: (
+    projectId: string,
+    sectionId: string,
+    groupId: string,
+    payload: Partial<Group>,
+  ) => void;
+  removeGroup: (projectId: string, sectionId: string, groupId: string) => void;
   addTracker: (projectId: string, sectionId: string, tracker: Tracker) => void;
   reorderTrackers: (
     projectId: string,
     sectionId: string,
     trackerId: string,
     targetIndex: number,
+    context?: { groupId?: string | null },
   ) => void;
   updateTracker: (
     projectId: string,
@@ -294,6 +352,8 @@ export const useAppStore = create<AppStore>()(
               const nextSection = sectionSchema.parse({
                 ...section,
                 trackers: section.trackers ?? [],
+                groups: section.groups ?? [],
+                defaultView: section.defaultView ?? "trackers",
                 createdAt: section.createdAt ?? timestamp,
                 updatedAt: timestamp,
               });
@@ -360,6 +420,141 @@ export const useAppStore = create<AppStore>()(
               };
             }),
           })),
+        setSectionDefaultView: (projectId, sectionId, view) =>
+          set((state) => ({
+            projects: state.projects.map((project) => {
+              if (project.id !== projectId) return project;
+              const timestamp = now();
+              return {
+                ...project,
+                sections: project.sections.map((section) => {
+                  if (section.id !== sectionId) return section;
+                  return sectionSchema.parse({
+                    ...section,
+                    defaultView: sectionViewSchema.parse(view),
+                    updatedAt: timestamp,
+                  });
+                }),
+                updatedAt: timestamp,
+              };
+            }),
+          })),
+        addGroup: (projectId, sectionId, group) =>
+          set((state) => ({
+            projects: state.projects.map((project) => {
+              if (project.id !== projectId) return project;
+              return {
+                ...project,
+                sections: project.sections.map((section) => {
+                  if (section.id !== sectionId) return section;
+                  const timestamp = now();
+                  const nextGroup = groupSchema.parse({
+                    ...group,
+                    trackerIds: group.trackerIds ?? [],
+                    createdAt: group.createdAt ?? timestamp,
+                    updatedAt: timestamp,
+                  });
+                  return sectionSchema.parse({
+                    ...section,
+                    groups: [...(section.groups ?? []), nextGroup],
+                    updatedAt: timestamp,
+                  });
+                }),
+                updatedAt: now(),
+              };
+            }),
+          })),
+        updateGroup: (projectId, sectionId, groupId, payload) =>
+          set((state) => ({
+            projects: state.projects.map((project) => {
+              if (project.id !== projectId) return project;
+              return {
+                ...project,
+                sections: project.sections.map((section) => {
+                  if (section.id !== sectionId) return section;
+                  const existingGroups = section.groups ?? [];
+                  const targetGroup = existingGroups.find((group) => group.id === groupId);
+                  if (!targetGroup) return section;
+                  const timestamp = now();
+                  const nextTrackerIds = payload.trackerIds
+                    ? Array.from(new Set(payload.trackerIds.filter(Boolean)))
+                    : targetGroup.trackerIds;
+                  const assignedSet = new Set(nextTrackerIds);
+                  const groupsWithoutDuplicates = existingGroups.map((group) => {
+                    if (group.id === groupId) {
+                      return group;
+                    }
+                    const filtered = group.trackerIds.filter((id) => !assignedSet.has(id));
+                    if (filtered.length === group.trackerIds.length) {
+                      return group;
+                    }
+                    return {
+                      ...group,
+                      trackerIds: filtered,
+                      updatedAt: timestamp,
+                    };
+                  });
+                  const nextGroups = groupsWithoutDuplicates.map((group) => {
+                    if (group.id !== groupId) return group;
+                    return groupSchema.parse({
+                      ...group,
+                      ...payload,
+                      trackerIds: nextTrackerIds,
+                      updatedAt: timestamp,
+                    });
+                  });
+                  const nextTrackers = section.trackers.map((tracker) => {
+                    if (assignedSet.has(tracker.id)) {
+                      return {
+                        ...tracker,
+                        groupId,
+                        updatedAt: timestamp,
+                      } as Tracker;
+                    }
+                    if (tracker.groupId === groupId && !assignedSet.has(tracker.id)) {
+                      return {
+                        ...tracker,
+                        groupId: null,
+                        updatedAt: timestamp,
+                      } as Tracker;
+                    }
+                    return tracker;
+                  });
+                  return sectionSchema.parse({
+                    ...section,
+                    groups: nextGroups,
+                    trackers: nextTrackers,
+                    updatedAt: timestamp,
+                  });
+                }),
+                updatedAt: now(),
+              };
+            }),
+          })),
+        removeGroup: (projectId, sectionId, groupId) =>
+          set((state) => ({
+            projects: state.projects.map((project) => {
+              if (project.id !== projectId) return project;
+              return {
+                ...project,
+                sections: project.sections.map((section) => {
+                  if (section.id !== sectionId) return section;
+                  const existingGroups = section.groups ?? [];
+                  const targetGroup = existingGroups.find((group) => group.id === groupId);
+                  if (!targetGroup) return section;
+                  const trackerIdSet = new Set(targetGroup.trackerIds);
+                  const timestamp = now();
+                  return sectionSchema.parse({
+                    ...section,
+                    groups: existingGroups.filter((group) => group.id !== groupId),
+                    trackers: section.trackers.filter((tracker) => tracker.groupId !== groupId && !trackerIdSet.has(tracker.id)),
+                    updatedAt: timestamp,
+                  });
+                }),
+                updatedAt: now(),
+              };
+            }),
+          })),
         addTracker: (projectId, sectionId, tracker) =>
           set((state) => ({
             projects: state.projects.map((project) => {
@@ -369,16 +564,30 @@ export const useAppStore = create<AppStore>()(
                 sections: project.sections.map((section) => {
                   if (section.id !== sectionId) return section;
                   const timestamp = now();
+                  const hasGroup = tracker.groupId
+                    ? (section.groups ?? []).some((group) => group.id === tracker.groupId)
+                    : false;
+                  const targetGroupId = hasGroup ? tracker.groupId : null;
                   const nextTracker = trackerSchema.parse({
                     ...tracker,
+                    groupId: targetGroupId,
                     createdAt: tracker.createdAt ?? timestamp,
                     updatedAt: timestamp,
                   });
-                  return {
+                  let nextGroups = section.groups ?? [];
+                  if (targetGroupId) {
+                    nextGroups = attachTrackerToGroup(
+                      { ...section, groups: nextGroups },
+                      nextTracker.id,
+                      targetGroupId,
+                    );
+                  }
+                  return sectionSchema.parse({
                     ...section,
                     trackers: [...section.trackers, nextTracker],
+                    groups: nextGroups,
                     updatedAt: timestamp,
-                  };
+                  });
                 }),
                 updatedAt: now(),
               };
@@ -392,24 +601,51 @@ export const useAppStore = create<AppStore>()(
                 ...project,
                 sections: project.sections.map((section) => {
                   if (section.id !== sectionId) return section;
-                  return {
+                  const timestamp = now();
+                  let nextGroups = section.groups ?? [];
+                  const nextTrackers = section.trackers.map((tracker) => {
+                    if (tracker.id !== trackerId) return tracker;
+                    let desiredGroupId: string | null =
+                      payload.groupId !== undefined ? payload.groupId ?? null : tracker.groupId ?? null;
+                    if (desiredGroupId) {
+                      const exists = nextGroups.some((group) => group.id === desiredGroupId);
+                      if (!exists) {
+                        desiredGroupId = null;
+                      }
+                    }
+                    if ((tracker.groupId ?? null) !== desiredGroupId) {
+                      const detach = detachTrackerFromGroups(
+                        { ...section, groups: nextGroups } as Section,
+                        tracker.id,
+                      );
+                      nextGroups = detach.groups;
+                      if (desiredGroupId) {
+                        nextGroups = attachTrackerToGroup(
+                          { ...section, groups: nextGroups } as Section,
+                          tracker.id,
+                          desiredGroupId,
+                        );
+                      }
+                    }
+                    return trackerSchema.parse({
+                      ...tracker,
+                      ...payload,
+                      groupId: desiredGroupId,
+                      updatedAt: timestamp,
+                    }) as Tracker;
+                  });
+                  return sectionSchema.parse({
                     ...section,
-                    trackers: section.trackers.map((tracker) => {
-                      if (tracker.id !== trackerId) return tracker;
-                      return trackerSchema.parse({
-                        ...tracker,
-                        ...payload,
-                        updatedAt: now(),
-                      }) as Tracker;
-                    }),
-                    updatedAt: now(),
-                  };
+                    trackers: nextTrackers,
+                    groups: nextGroups,
+                    updatedAt: timestamp,
+                  });
                 }),
                 updatedAt: now(),
               };
             }),
           })),
-        reorderTrackers: (projectId, sectionId, trackerId, targetIndex) =>
+        reorderTrackers: (projectId, sectionId, trackerId, targetIndex, context) =>
           set((state) => ({
             projects: state.projects.map((project) => {
               if (project.id !== projectId) return project;
@@ -417,27 +653,68 @@ export const useAppStore = create<AppStore>()(
                 ...project,
                 sections: project.sections.map((section) => {
                   if (section.id !== sectionId) return section;
-                  const currentIndex = section.trackers.findIndex(
-                    (tracker) => tracker.id === trackerId,
-                  );
-                  if (
-                    currentIndex === -1 ||
-                    targetIndex < 0 ||
-                    targetIndex >= section.trackers.length
-                  ) {
+                  const timestamp = now();
+                  const groupId = context?.groupId ?? null;
+                  if (groupId) {
+                    const group = (section.groups ?? []).find((item) => item.id === groupId);
+                    if (!group) return section;
+                    const currentIndex = group.trackerIds.findIndex((id) => id === trackerId);
+                    if (
+                      currentIndex === -1 ||
+                      targetIndex < 0 ||
+                      targetIndex >= group.trackerIds.length
+                    ) {
+                      return section;
+                    }
+                    const nextTrackerIds = moveItem(group.trackerIds, currentIndex, targetIndex);
+                    const nextGroups = (section.groups ?? []).map((item) => {
+                      if (item.id !== groupId) return item;
+                      return {
+                        ...item,
+                        trackerIds: nextTrackerIds,
+                        updatedAt: timestamp,
+                      };
+                    });
+                    const nextTrackers = section.trackers.map((tracker) => {
+                      if (tracker.id !== trackerId) return tracker;
+                      return {
+                        ...tracker,
+                        updatedAt: timestamp,
+                      } as Tracker;
+                    });
+                    return sectionSchema.parse({
+                      ...section,
+                      groups: nextGroups,
+                      trackers: nextTrackers,
+                      updatedAt: timestamp,
+                    });
+                  }
+                  const ungrouped = section.trackers.filter((tracker) => !tracker.groupId);
+                  const currentIndex = ungrouped.findIndex((tracker) => tracker.id === trackerId);
+                  if (currentIndex === -1 || targetIndex < 0 || targetIndex >= ungrouped.length) {
                     return section;
                   }
-                  const timestamp = now();
-                  const nextTrackers = moveItem(section.trackers, currentIndex, targetIndex);
-                  nextTrackers[targetIndex] = {
-                    ...nextTrackers[targetIndex],
-                    updatedAt: timestamp,
-                  } as Tracker;
-                  return {
+                  const nextUngrouped = moveItem(ungrouped, currentIndex, targetIndex).map(
+                    (tracker) =>
+                      tracker.id === trackerId
+                        ? ({
+                            ...tracker,
+                            updatedAt: timestamp,
+                          } as Tracker)
+                        : tracker,
+                  );
+                  let cursor = 0;
+                  const nextTrackers = section.trackers.map((tracker) => {
+                    if (tracker.groupId) return tracker;
+                    const nextTracker = nextUngrouped[cursor];
+                    cursor += 1;
+                    return nextTracker;
+                  });
+                  return sectionSchema.parse({
                     ...section,
                     trackers: nextTrackers,
                     updatedAt: timestamp,
-                  };
+                  });
                 }),
                 updatedAt: now(),
               };
@@ -451,11 +728,14 @@ export const useAppStore = create<AppStore>()(
                 ...project,
                 sections: project.sections.map((section) => {
                   if (section.id !== sectionId) return section;
-                  return {
+                  const timestamp = now();
+                  const { groups } = detachTrackerFromGroups(section, trackerId);
+                  return sectionSchema.parse({
                     ...section,
+                    groups,
                     trackers: section.trackers.filter((tracker) => tracker.id !== trackerId),
-                    updatedAt: now(),
-                  };
+                    updatedAt: timestamp,
+                  });
                 }),
                 updatedAt: now(),
               };

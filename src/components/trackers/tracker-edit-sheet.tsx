@@ -69,6 +69,15 @@ export function TrackerEditSheet({
       [projectId, sectionId, trackerId]
     )
   );
+  const groups = useAppStore(
+    React.useCallback(
+      (state) =>
+        state.projects
+          .find((project) => project.id === projectId)
+          ?.sections.find((section) => section.id === sectionId)?.groups ?? [],
+      [projectId, sectionId]
+    )
+  );
 
   React.useEffect(() => {
     if (open && !tracker) {
@@ -96,6 +105,7 @@ export function TrackerEditSheet({
           id: item.id,
           label: item.label,
         })) ?? [{ id: createId(), label: 'عنصر جديد' }],
+      groupId: tracker?.groupId ?? null,
     },
   });
 
@@ -116,6 +126,7 @@ export function TrackerEditSheet({
         id: item.id,
         label: item.label,
       })),
+      groupId: tracker.groupId ?? null,
     });
   }, [tracker, form, open]);
 
@@ -196,6 +207,7 @@ export function TrackerEditSheet({
       endDate: values.endDate ? values.endDate : null,
       cadence: values.cadence,
       activeWeekdays: values.activeWeekdays,
+      groupId: values.groupId ?? null,
     };
 
     const nextItems = values.items.map((item) => {
@@ -298,6 +310,34 @@ export function TrackerEditSheet({
                         {...field}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="groupId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>المجموعة</FormLabel>
+                    <FormControl>
+                      <select
+                        value={field.value ?? ''}
+                        onChange={(event) => field.onChange(event.target.value || null)}
+                        className="w-full rounded-2xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      >
+                        <option value="">بلا مجموعة</option>
+                        {groups.map((group) => (
+                          <option key={group.id} value={group.id}>
+                            {group.title}
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      اختر مجموعة لضم الجدول أو اتركه بدون مجموعة.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}

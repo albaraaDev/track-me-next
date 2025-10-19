@@ -25,7 +25,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAppActions } from '@/store/app-store';
+import { useAppActions, useAppStore } from '@/store/app-store';
 import {
   CadencePreset,
   Tracker,
@@ -76,6 +76,7 @@ export const trackerFormSchema = z.object({
       })
     )
     .min(1, 'أضف عنصراً واحداً على الأقل'),
+  groupId: z.string().optional().nullable(),
 });
 
 export type TrackerFormValues = z.infer<typeof trackerFormSchema>;
@@ -90,6 +91,7 @@ type TrackerCreateSheetProps = {
   sectionId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultGroupId?: string | null;
 };
 
 export function TrackerCreateSheet({
@@ -97,8 +99,18 @@ export function TrackerCreateSheet({
   sectionId,
   open,
   onOpenChange,
+  defaultGroupId = null,
 }: TrackerCreateSheetProps) {
   const { addTracker } = useAppActions();
+  const groups = useAppStore(
+    React.useCallback(
+      (state) =>
+        state.projects
+          .find((project) => project.id === projectId)
+          ?.sections.find((section) => section.id === sectionId)?.groups ?? [],
+      [projectId, sectionId]
+    )
+  );
 
   const form = useForm<TrackerFormValues>({
     resolver: zodResolver(trackerFormSchema),
@@ -112,12 +124,18 @@ export function TrackerCreateSheet({
       cadence: 'week',
       activeWeekdays: [0, 2, 4],
       items: [{ id: createId(), label: 'عنصر جديد' }],
+      groupId: null,
     },
   });
 
   const type = form.watch('type');
   const startDate = form.watch('startDate');
   const cadence = form.watch('cadence');
+
+  React.useEffect(() => {
+    if (!open) return;
+    form.setValue('groupId', defaultGroupId ?? null, { shouldDirty: false });
+  }, [open, defaultGroupId, form]);
 
   React.useEffect(() => {
     if (!startDate) return;
@@ -147,6 +165,7 @@ export function TrackerCreateSheet({
       activeWeekdays: values.activeWeekdays,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      groupId: values.groupId ?? null,
     };
 
     if (values.type === 'status') {
@@ -297,6 +316,34 @@ export function TrackerCreateSheet({
                         {...field}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="groupId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>المجموعة</FormLabel>
+                    <FormControl>
+                      <select
+                        value={field.value ?? ''}
+                        onChange={(event) => field.onChange(event.target.value || null)}
+                        className="w-full rounded-2xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      >
+                        <option value="">بلا مجموعة</option>
+                        {groups.map((group) => (
+                          <option key={group.id} value={group.id}>
+                            {group.title}
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      يمكنك ربط الجدول بمجموعة موجودة أو تركه خارج المجموعات.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}

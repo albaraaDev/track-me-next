@@ -6,6 +6,7 @@ import { ar } from 'date-fns/locale';
 import {
   CalendarDays,
   Check,
+  ChevronDown,
   Edit,
   EllipsisVertical,
   Eraser,
@@ -17,12 +18,6 @@ import {
   X,
 } from 'lucide-react';
 import { Tracker } from '@/domain/types';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
 import { useAppActions } from '@/store/app-store';
 import { Button } from '@/components/ui/button';
@@ -74,6 +69,8 @@ type TrackerPreviewProps = {
   trackers: Tracker[];
   projectId: string;
   sectionId: string;
+  groupId?: string | null;
+  onRequestUngroup?: (trackerId: string) => void;
 };
 
 const weekdayLabels = [
@@ -90,6 +87,8 @@ export function TrackerPreview({
   trackers,
   projectId,
   sectionId,
+  groupId = null,
+  onRequestUngroup,
 }: TrackerPreviewProps) {
   const { toast } = useToast();
   const { removeTracker, reorderTrackers } = useAppActions();
@@ -120,9 +119,11 @@ export function TrackerPreview({
 
       const targetIndex = trackers.findIndex((tracker) => tracker.id === over.id);
       if (targetIndex < 0) return;
-      reorderTrackers(projectId, sectionId, active.id as string, targetIndex);
+      reorderTrackers(projectId, sectionId, active.id as string, targetIndex, {
+        groupId: groupId ?? null,
+      });
     },
-    [projectId, reorderTrackers, sectionId, trackers]
+    [projectId, reorderTrackers, sectionId, trackers, groupId]
   );
 
   const trackerMap = React.useMemo(() => {
@@ -148,15 +149,18 @@ export function TrackerPreview({
   }, [deleteTrackerId, trackerMap, removeTracker, projectId, sectionId, toast]);
 
   if (!trackers.length) {
+    const title = groupId
+      ? 'لا توجد جداول داخل هذه المجموعة بعد'
+      : 'لم يتم إنشاء أي جداول متابعة بعد';
+    const description = groupId
+      ? 'أضف جدولاً جديداً أو انقل جدولاً موجوداً إلى هذه المجموعة عبر التعديل.'
+      : 'أنشئ جدول متابعة للحالات أو الملاحظات لتبدأ بتسجيل إنجازاتك اليومية داخل القسم.';
     return (
       <div className="glass-panel rounded-3xl p-6 text-center shadow-glass">
         <Table2 className="mx-auto size-10 text-primary" />
-        <h3 className="mt-3 text-lg font-semibold">
-          لم يتم إنشاء أي جداول متابعة بعد
-        </h3>
+        <h3 className="mt-3 text-lg font-semibold">{title}</h3>
         <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-          أنشئ جدول متابعة للحالات أو الملاحظات لتبدأ بتسجيل إنجازاتك اليومية
-          داخل القسم.
+          {description}
         </p>
       </div>
     );
@@ -174,7 +178,7 @@ export function TrackerPreview({
           items={trackers.map((tracker) => tracker.id)}
           strategy={verticalListSortingStrategy}
         >
-          <Accordion type="single" collapsible className="space-y-3" dir="rtl">
+          <div className="space-y-3" dir="rtl">
             {trackers.map((tracker) => (
               <SortableTrackerItem
                 key={tracker.id}
@@ -184,9 +188,11 @@ export function TrackerPreview({
                 onEdit={() => setEditTrackerId(tracker.id)}
                 onDelete={() => setDeleteTrackerId(tracker.id)}
                 isActive={activeId === tracker.id}
+                groupId={groupId}
+                onRequestUngroup={groupId ? onRequestUngroup : undefined}
               />
             ))}
-          </Accordion>
+          </div>
         </SortableContext>
       </DndContext>
 
@@ -371,6 +377,8 @@ type SortableTrackerItemProps = {
   onEdit: () => void;
   onDelete: () => void;
   isActive: boolean;
+  groupId?: string | null;
+  onRequestUngroup?: (trackerId: string) => void;
 };
 
 function SortableTrackerItem({
@@ -380,6 +388,8 @@ function SortableTrackerItem({
   onEdit,
   onDelete,
   isActive,
+  groupId = null,
+  onRequestUngroup,
 }: SortableTrackerItemProps) {
   const {
     attributes,
@@ -390,6 +400,7 @@ function SortableTrackerItem({
     transition,
     isDragging,
   } = useSortable({ id: tracker.id });
+  const [isExpanded, setIsExpanded] = React.useState(false);
   const [isDescriptionOpen, setIsDescriptionOpen] = React.useState(false);
   const description = tracker.description?.trim() ?? '';
   const hasDescription = description.length > 0;
@@ -401,19 +412,18 @@ function SortableTrackerItem({
   };
 
   return (
-    <AccordionItem
+    <div
       ref={setNodeRef}
-      value={tracker.id}
       style={style}
       className={cn(
-        'rounded-2xl border border-border/50 bg-white/5 px-4 backdrop-blur transition',
+        'rounded-2xl border border-border/50 bg-white/5 px-4 py-3 backdrop-blur transition',
         isDragging ? 'opacity-80 shadow-glow-soft' : undefined
       )}
     >
-      <AccordionTrigger className="flex items-center justify-between gap-3 py-3 text-right text-sm font-medium text-foreground">
-        <div className="flex justify-between items-center flex-1 gap-3">
-          <div className="flex gap-2 items-center">
-          <button
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-1 items-start gap-3">
+            <button
               type="button"
               ref={setActivatorNodeRef}
               {...attributes}
@@ -426,22 +436,34 @@ function SortableTrackerItem({
             >
               <GripVertical className="size-4" />
             </button>
-          <div className="flex flex-col items-start gap-1">
-            <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-              <span className="text-xl">
-                {tracker.icon || (tracker.type === 'status' ? '📊' : '📝')}
-              </span>
-              {tracker.title}
-            </span>
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <span>{formatDate(tracker.startDate)}</span>⇠
-              <span>
-                {tracker.endDate ? formatDate(tracker.endDate) : 'متابعة مفتوحة'}
-              </span>
-            </span>
+            <button
+              type="button"
+              onClick={() => setIsExpanded((prev) => !prev)}
+              aria-expanded={isExpanded}
+              className="flex flex-1 items-center justify-between gap-3 text-right"
+            >
+              <div className="flex flex-col items-start gap-1">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <span className="text-xl">
+                    {tracker.icon || (tracker.type === 'status' ? '📊' : '📝')}
+                  </span>
+                  {tracker.title}
+                </span>
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <span>{formatDate(tracker.startDate)}</span>
+                  <span>⇠</span>
+                  <span>{tracker.endDate ? formatDate(tracker.endDate) : 'متابعة مفتوحة'}</span>
+                </span>
+              </div>
+              <ChevronDown
+                className={cn(
+                  'size-4 text-muted-foreground transition-transform duration-200 ease-out',
+                  isExpanded ? 'rotate-180' : 'rotate-0'
+                )}
+              />
+            </button>
           </div>
-          </div>
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -457,9 +479,18 @@ function SortableTrackerItem({
                 align="end"
                 className="glass-panel rounded-2xl border border-border/50 p-1 text-right text-sm"
               >
+                {groupId ? (
+                  <DropdownMenuItem
+                    className="flex items-center gap-2 text-foreground"
+                    onSelect={() => onRequestUngroup?.(tracker.id)}
+                  >
+                    إزالة من المجموعة
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuItem
                   className="flex items-center gap-2 text-foreground"
-                  onSelect={() => setIsDescriptionOpen(true)}
+                  disabled={!hasDescription}
+                  onSelect={() => hasDescription && setIsDescriptionOpen(true)}
                 >
                   <NotebookPen className="size-4 text-primary" />
                   عرض الوصف
@@ -482,23 +513,26 @@ function SortableTrackerItem({
             </DropdownMenu>
           </div>
         </div>
-      </AccordionTrigger>
-      <AccordionContent className="space-y-4">
-        <TrackerMeta tracker={tracker} />
-        {tracker.type === 'status' ? (
-          <StatusTrackerPreview
-            tracker={tracker as StatusTracker}
-            projectId={projectId}
-            sectionId={sectionId}
-          />
-        ) : (
-          <NotesTrackerPreview
-            tracker={tracker as NotesTracker}
-            projectId={projectId}
-            sectionId={sectionId}
-          />
-        )}
-      </AccordionContent>
+
+        {isExpanded ? (
+          <div className="space-y-4 border-t border-border/40 pt-3">
+            <TrackerMeta tracker={tracker} />
+            {tracker.type === 'status' ? (
+              <StatusTrackerPreview
+                tracker={tracker as StatusTracker}
+                projectId={projectId}
+                sectionId={sectionId}
+              />
+            ) : (
+              <NotesTrackerPreview
+                tracker={tracker as NotesTracker}
+                projectId={projectId}
+                sectionId={sectionId}
+              />
+            )}
+          </div>
+        ) : null}
+      </div>
       <Dialog open={isDescriptionOpen} onOpenChange={setIsDescriptionOpen}>
         <DialogContent className="glass-panel max-w-md rounded-3xl border border-border/70 text-right shadow-glow-soft">
           <DialogHeader>
@@ -524,7 +558,7 @@ function SortableTrackerItem({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AccordionItem>
+    </div>
   );
 }
 
