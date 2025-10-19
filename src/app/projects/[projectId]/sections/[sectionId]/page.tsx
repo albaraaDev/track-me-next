@@ -65,7 +65,7 @@ function GroupPanel({
   return (
     <div className="">
       <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-3 glass-panel rounded-3xl p-4 shadow-glass">
+        <div className="flex flex-wrap items-center justify-between gap-3 glass-panel rounded-2xl ps-3 p-2 shadow-glass">
           <button
             type="button"
             onClick={() => setExpanded((prev) => !prev)}

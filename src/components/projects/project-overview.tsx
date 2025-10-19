@@ -86,20 +86,20 @@ export function ProjectOverview({ project, metrics }: ProjectOverviewProps) {
           <p className="mt-4 text-3xl font-semibold text-foreground">
             {formatPercentage(status.completionRate)}
           </p>
-          <ul className="mt-4 space-y-2 text-xs text-muted-foreground">
-            <li>
-              تم: <span className="text-foreground">{status.done}</span>
+          <ul className="mt-4 grid grid-cols-3 gap-2  text-xs text-muted-foreground">
+            <li className="px-3 py-1 rounded-full bg-green-500/10 border border-green-500 text-green-500 text-center">
+              <span className="text-foreground">{status.done}</span>
             </li>
-            <li>
-              جزئي: <span className="text-foreground">{status.partial}</span>
+            <li className="px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500 text-yellow-500 text-center">
+              <span className="text-foreground">{status.partial}</span>
             </li>
-            <li>
-              لم يتم: <span className="text-foreground">{status.missed}</span>
+            <li className="px-3 py-1 rounded-full bg-red-500/10 border border-red-500 text-red-500 text-center">
+              <span className="text-foreground">{status.missed}</span>
             </li>
           </ul>
-          <p className="mt-4 text-xs text-muted-foreground">
+          {/* <p className="mt-4 text-xs text-muted-foreground">
             عدد الجداول الفاعلة: {status.activeTrackerCount}
-          </p>
+          </p> */}
         </article>
 
         <article className="glass-panel rounded-3xl p-5 shadow-glass">

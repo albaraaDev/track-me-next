@@ -107,7 +107,7 @@ export function ProjectStats({ project, metrics }: ProjectStatsProps) {
             <span className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground">
               إجمالي السجلات: {status.total}
             </span>
-            <span className="rounded-full bg-emerald-100/60 px-3 py-1 text-emerald-700">
+            <span className="rounded-full bg-green-500/10 px-3 py-1 text-green-500">
               معدل الإنجاز:{' '}
               {status.completionRate !== null
                 ? `${Math.round(status.completionRate * 100)}%`

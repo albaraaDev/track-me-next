@@ -68,7 +68,7 @@ export function ProjectCard({
 
   return (
     <>
-      <article className="glass-panel relative overflow-hidden rounded-3xl p-3 shadow-glass transition hover:shadow-glow-soft">
+      <article className="glass-panel relative overflow-hidden rounded-3xl p-2.5 shadow-glass transition hover:shadow-glow-soft">
         <div className="absolute inset-0 z-0 bg-gradient-to-br from-primary/5 via-primary/0 to-accent/10" />
         <div className="relative z-10 flex flex-col gap-4">
           <header className="flex items-center justify-between gap-3">
